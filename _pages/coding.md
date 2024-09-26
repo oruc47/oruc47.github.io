@@ -3,8 +3,6 @@ permalink: /coding/
 title: "Coding Portfolio"
 excerpt: "Economics related coding samples from research and projects"
 author_profile: true
-redirect_from: 
-  - /coding/
 ---
 
 ## C++
