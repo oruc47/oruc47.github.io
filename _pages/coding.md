@@ -1,5 +1,5 @@
 ---
-permalink: /
+permalink: /coding/
 title: "Coding Portfolio"
 excerpt: "Economics related coding samples from research and projects"
 author_profile: true
@@ -7,21 +7,22 @@ redirect_from:
   - /coding/
 ---
 
-### [Autoregression Disturbances for Maximum Liklihood and Least Squares]
 ## C++
+### [Autoregression Disturbances for Maximum Liklihood and Least Squares]
+
 Analysis of the finite sample behavior of estimators and tests of 
 regression models with AR disturbances, where Least Squares (LS) and 
 Maximum Likelihood (ML) estimation and inference are examined. 
 Empirical behavior of the statistics in finite samples are analyzed using 
 Monte Carlo simulation under standard and nonstandard conditions.
 
-### [TUBITAK Price Dispersion]
 ## Python, Stata
+### [TUBITAK Price Dispersion]
 Analysis of an extensive dataset of Turkish retail store prices to look 
 at competitor price gaps and adjustment during high inflation. 
 
-### [Marcoeconomic DSGE and RBC Simulations]
 ## MATLAB
+### [Marcoeconomic DSGE and RBC Simulations]
 Different Macroeconomic Simulations in MATLAB. Includes New Keynesian DSGE, 
 deterministic and stochastic RBC, value and policy function iterations and 
 optimizations.
