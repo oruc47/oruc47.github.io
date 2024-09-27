@@ -33,7 +33,7 @@ optimizations.
 
 
 
-[Autoregression Disturbances for Maximum Liklihood and Least Squares]: https://github.com/oruc47/mle_ls_auto_regression
+[Autoregression Disturbances for Maximum Likelihood and Least Squares]: https://github.com/oruc47/mle_ls_auto_regression
 
 [Marcoeconomic DSGE and RBC Simulations]: https://github.com/oruc47/matlab_macro_economic_sim
 
