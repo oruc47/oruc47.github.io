@@ -39,4 +39,4 @@ optimizations.
 
 [TUBITAK Price Dispersion]: https://github.com/oruc47/tubitak_price_dispersion
 
-[LLM Practice] : https://github.com/oruc47/basic_llm_implementation
+[LLM Practice]: https://github.com/oruc47/basic_llm_implementation
