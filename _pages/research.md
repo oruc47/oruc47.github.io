@@ -7,7 +7,7 @@ permalink: /research/
 
 ### Working Papers 
 
-Oruc, Muhammed. "Put Title of MY paper". [PDF.][pdf]
+Price Setting Dynamics in High Inflation: Evidence from Turkish Grocery Retailers (with Mehmet Özsoy and Emrehan Aktuğ ) [PDF.][pdf]
 
 [pdf]: /files/working_paper.pdf
 
