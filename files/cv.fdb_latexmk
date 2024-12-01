@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1727382634 "/Users/moikbal/Desktop/oruc47.github.io/files/cv.tex" "cv.pdf" "cv" 1727382634 0
-  "/Users/moikbal/Desktop/oruc47.github.io/files/cv.tex" 1727382634 2977 7e640d39e922531339fd8a8ced060036 ""
+["pdflatex"] 1733052827 "/Users/moikbal/Desktop/oruc47.github.io/files/cv.tex" "cv.pdf" "cv" 1733052828 0
+  "/Users/moikbal/Desktop/oruc47.github.io/files/cv.tex" 1733052827 3144 fb8444f3e345a10b4ed7a97f09ead4cf ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -73,9 +73,9 @@
   "/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1691413161 4623355 b8cad38412faebe1ce5b780a45db67bd ""
   "/usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt" 1691413104 7883462 5a8bdd7d09b9bc356da6e30d6a91c9d1 ""
   "/usr/local/texlive/2023/texmf.cnf" 1678822455 577 1b2b1af17af2508fb20dd85783af4050 ""
-  "cv.aux" 1727382634 554 e6f85c6f44bbe194532b4fa1fd8ca02c "pdflatex"
-  "cv.out" 1727382634 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "cv.tex" 1727382634 2977 7e640d39e922531339fd8a8ced060036 ""
+  "cv.aux" 1733052828 554 e6f85c6f44bbe194532b4fa1fd8ca02c "pdflatex"
+  "cv.out" 1733052828 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "cv.tex" 1733052827 3144 fb8444f3e345a10b4ed7a97f09ead4cf ""
   (generated)
   "cv.aux"
   "cv.log"
