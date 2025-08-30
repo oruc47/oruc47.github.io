@@ -12,8 +12,8 @@ main:
     url: /coding/
         
     
-  - title: "CV"
-    url: /files/cv.pdf
+  # - title: "CV"
+  #   url: /files/cv.pdf
 
   - title: "Resume"
     url: /files/Oruc_Muhammed_Resume.pdf
