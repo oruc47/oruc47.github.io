@@ -352,13 +352,6 @@
         -webkit-tap-highlight-color: transparent;
       }
 
-      .hint {
-        margin: 22px 0 0;
-        text-align: center;
-        color: #9a6278;
-        font-size: 0.95rem;
-      }
-
       .success {
         display: none;
         text-align: center;
@@ -392,36 +385,13 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.92);
       }
 
-      .photo-frame img,
-      .photo-fallback {
+      .photo-frame img {
         width: 100%;
         display: block;
         border-radius: 20px;
-      }
-
-      .photo-frame img {
         aspect-ratio: 4 / 5;
         object-fit: cover;
         background: linear-gradient(160deg, #ffe2ec, #fff7fb);
-      }
-
-      .photo-fallback {
-        aspect-ratio: 4 / 5;
-        display: grid;
-        place-items: center;
-        padding: 22px;
-        background:
-          radial-gradient(circle at top, rgba(255, 255, 255, 0.85), transparent 36%),
-          linear-gradient(160deg, #ffdbe8, #fff6fa);
-        color: #8d6070;
-        font-weight: 600;
-        line-height: 1.5;
-      }
-
-      .photo-note {
-        margin-top: 14px;
-        color: #9a6278;
-        font-size: 0.92rem;
       }
 
       .compliment-banner {
@@ -653,7 +623,6 @@
             </div>
           </div>
 
-          <p class="hint">The tiny button is not serious and will keep running away.</p>
         </div>
 
         <div class="success" id="success">
@@ -673,23 +642,16 @@
           </div>
 
           <div class="photo-frame" id="photo-frame">
-            <img id="success-image" alt="A special photo for Zeynep" hidden>
-            <div class="photo-fallback" id="photo-fallback">
-              The photo could not be loaded, but the answer is still perfect.
-            </div>
+            <img id="success-image" alt="A special photo for Zeynep" src="./zeynep-photo.JPG">
           </div>
         </div>
       </section>
     </main>
 
     <script>
-      const SUCCESS_IMAGE_SRC = "./zeynep-photo.JPG";
-
       const area = document.getElementById("button-area");
       const yesButton = document.getElementById("yes-button");
       const noButton = document.getElementById("no-button");
-      const successImage = document.getElementById("success-image");
-      const photoFallback = document.getElementById("photo-fallback");
       const heartShower = document.getElementById("heart-shower");
       let hopCount = 0;
       let lockMovement = false;
@@ -790,11 +752,6 @@
       noButton.addEventListener("touchstart", dodge, { passive: false });
       noButton.addEventListener("click", dodge);
 
-      successImage.addEventListener("error", () => {
-        successImage.hidden = true;
-        photoFallback.hidden = false;
-      });
-
       document.addEventListener("pointermove", (event) => {
         if (window.innerWidth > 700 || lockMovement) {
           return;
@@ -815,12 +772,6 @@
           window.setTimeout(addFloatingHeart, index * 120);
         }
         launchHeartShower();
-
-        if (SUCCESS_IMAGE_SRC.trim()) {
-          successImage.src = SUCCESS_IMAGE_SRC;
-          successImage.hidden = false;
-          photoFallback.hidden = true;
-        }
       });
 
       window.addEventListener("resize", () => {
