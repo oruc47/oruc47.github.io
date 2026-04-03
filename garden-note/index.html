@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+    <title>A Tiny Question</title>
+    <style>
+      :root {
+        --bg-1: #ffe7ef;
+        --bg-2: #ffd5e5;
+        --bg-3: #fff7fb;
+        --card: rgba(255, 252, 254, 0.92);
+        --card-border: rgba(255, 255, 255, 0.7);
+        --text: #27111c;
+        --muted: #7e5566;
+        --yes-start: #ff3d8d;
+        --yes-end: #ff6b8c;
+        --yes-shadow: rgba(255, 61, 141, 0.35);
+        --no-bg: rgba(255, 255, 255, 0.95);
+        --no-shadow: rgba(64, 30, 45, 0.16);
+        --ring: rgba(255, 255, 255, 0.9);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 30%),
+          radial-gradient(circle at 85% 20%, rgba(255, 160, 193, 0.45), transparent 18%),
+          radial-gradient(circle at 10% 80%, rgba(255, 184, 209, 0.5), transparent 22%),
+          linear-gradient(160deg, var(--bg-1), var(--bg-2) 48%, var(--bg-3));
+        overflow-x: hidden;
+      }
+
+      .scene {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        position: relative;
+      }
+
+      .scene::before,
+      .scene::after {
+        content: "";
+        position: fixed;
+        inset: auto;
+        width: 240px;
+        height: 240px;
+        border-radius: 999px;
+        filter: blur(18px);
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .scene::before {
+        top: -48px;
+        left: -56px;
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      .scene::after {
+        right: -36px;
+        bottom: -54px;
+        background: rgba(255, 175, 207, 0.7);
+      }
+
+      .card {
+        width: min(760px, 100%);
+        position: relative;
+        background: var(--card);
+        border: 1px solid var(--card-border);
+        border-radius: 32px;
+        box-shadow:
+          0 22px 60px rgba(107, 49, 72, 0.16),
+          inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        padding: clamp(24px, 5vw, 42px);
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+      }
+
+      .sparkles {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .sparkles span {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: rgba(255, 124, 171, 0.28);
+      }
+
+      .sparkles span:nth-child(1) {
+        top: 18%;
+        left: 12%;
+      }
+
+      .sparkles span:nth-child(2) {
+        top: 14%;
+        right: 16%;
+        width: 10px;
+        height: 10px;
+      }
+
+      .sparkles span:nth-child(3) {
+        bottom: 21%;
+        left: 8%;
+        width: 18px;
+        height: 18px;
+      }
+
+      .sparkles span:nth-child(4) {
+        right: 11%;
+        bottom: 16%;
+        width: 12px;
+        height: 12px;
+      }
+
+      .intro-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.86);
+        color: #9c4068;
+        font-size: 0.88rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .intro-badge::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4f95, #ff7cab);
+        box-shadow: 0 0 0 4px rgba(255, 79, 149, 0.12);
+      }
+
+      .heart-wrap {
+        margin: 22px auto 16px;
+        width: min(170px, 40vw);
+        aspect-ratio: 1;
+        position: relative;
+      }
+
+      .heart {
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 78%;
+        height: 78%;
+        background: linear-gradient(145deg, #fff7fb, #ffeaf3);
+        transform: rotate(-45deg);
+        border-radius: 22px 22px 8px 8px;
+        box-shadow: 0 12px 24px rgba(197, 111, 146, 0.18);
+      }
+
+      .heart::before,
+      .heart::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: inherit;
+      }
+
+      .heart::before {
+        top: -49%;
+        left: 0;
+      }
+
+      .heart::after {
+        left: 49%;
+        top: 0;
+      }
+
+      .heart-face {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        transform: translateY(-6px);
+      }
+
+      .heart-face::before,
+      .heart-face::after {
+        content: "";
+        position: absolute;
+        top: 48%;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: rgba(85, 55, 67, 0.14);
+      }
+
+      .heart-face::before {
+        left: 40%;
+      }
+
+      .heart-face::after {
+        right: 40%;
+      }
+
+      .heart-accent {
+        position: absolute;
+        top: 18px;
+        right: 12px;
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, #ff4c91, #ff7cab);
+        transform: rotate(-45deg);
+        border-radius: 8px 8px 2px 2px;
+      }
+
+      .heart-accent::before,
+      .heart-accent::after {
+        content: "";
+        position: absolute;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: inherit;
+      }
+
+      .heart-accent::before {
+        top: -16px;
+        left: 0;
+      }
+
+      .heart-accent::after {
+        left: 16px;
+        top: 0;
+      }
+
+      h1 {
+        margin: 12px auto 14px;
+        max-width: 11ch;
+        text-align: center;
+        font-size: clamp(2.2rem, 5vw, 4rem);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+      }
+
+      .lead {
+        margin: 0 auto;
+        max-width: 36rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: clamp(1rem, 2.2vw, 1.15rem);
+        line-height: 1.6;
+      }
+
+      .actions {
+        position: relative;
+        min-height: 190px;
+        margin-top: 32px;
+      }
+
+      .yes-button,
+      .no-button {
+        border: 0;
+        cursor: pointer;
+        font: inherit;
+      }
+
+      .yes-button {
+        position: relative;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: min(100%, 280px);
+        min-height: 84px;
+        padding: 18px 42px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, var(--yes-start), var(--yes-end));
+        color: white;
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        box-shadow:
+          0 24px 34px var(--yes-shadow),
+          inset 0 1px 0 rgba(255, 255, 255, 0.26);
+        transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+        animation: yes-pulse 2.2s ease-in-out infinite;
+      }
+
+      .yes-button:hover,
+      .yes-button:focus-visible {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow:
+          0 28px 40px rgba(255, 61, 141, 0.42),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        filter: saturate(1.06);
+        outline: none;
+      }
+
+      .button-area {
+        position: relative;
+        width: 100%;
+        min-height: 170px;
+        margin-top: 10px;
+      }
+
+      .yes-anchor {
+        position: absolute;
+        left: 50%;
+        top: 18px;
+        transform: translateX(-50%);
+      }
+
+      .no-button {
+        position: absolute;
+        top: 40px;
+        left: calc(50% + 145px);
+        z-index: 4;
+        min-width: 72px;
+        min-height: 50px;
+        padding: 12px 18px;
+        border-radius: 999px;
+        background: var(--no-bg);
+        color: #41303a;
+        font-size: 1rem;
+        font-weight: 700;
+        box-shadow:
+          0 18px 24px var(--no-shadow),
+          inset 0 1px 0 rgba(255, 255, 255, 0.94);
+        transition:
+          left 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+          top 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
+          transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+        user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .hint {
+        margin: 22px 0 0;
+        text-align: center;
+        color: #9a6278;
+        font-size: 0.95rem;
+      }
+
+      .success {
+        display: none;
+        text-align: center;
+        animation: fade-up 460ms ease forwards;
+      }
+
+      .success h2 {
+        margin: 10px auto 12px;
+        font-size: clamp(2rem, 4.8vw, 3.25rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      .success p {
+        margin: 0 auto 20px;
+        max-width: 32rem;
+        color: var(--muted);
+        font-size: clamp(1rem, 2.2vw, 1.12rem);
+        line-height: 1.6;
+      }
+
+      .photo-frame {
+        width: min(100%, 420px);
+        margin: 0 auto;
+        border-radius: 28px;
+        padding: 12px;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 231, 240, 0.96));
+        box-shadow:
+          0 24px 40px rgba(102, 55, 74, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.92);
+      }
+
+      .photo-frame img,
+      .photo-fallback {
+        width: 100%;
+        display: block;
+        border-radius: 20px;
+      }
+
+      .photo-frame img {
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        background: linear-gradient(160deg, #ffe2ec, #fff7fb);
+      }
+
+      .photo-fallback {
+        aspect-ratio: 4 / 5;
+        display: grid;
+        place-items: center;
+        padding: 22px;
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.85), transparent 36%),
+          linear-gradient(160deg, #ffdbe8, #fff6fa);
+        color: #8d6070;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .photo-note {
+        margin-top: 14px;
+        color: #9a6278;
+        font-size: 0.92rem;
+      }
+
+      .floating-heart {
+        position: fixed;
+        font-size: 26px;
+        pointer-events: none;
+        animation: heart-rise 1.3s ease forwards;
+      }
+
+      body.is-answered .question {
+        display: none;
+      }
+
+      body.is-answered .success {
+        display: block;
+      }
+
+      @keyframes yes-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.03);
+        }
+      }
+
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes heart-rise {
+        from {
+          opacity: 0;
+          transform: translateY(0) scale(0.7);
+        }
+        20% {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+          transform: translateY(-80px) scale(1.25) rotate(14deg);
+        }
+      }
+
+      @media (max-width: 700px) {
+        .card {
+          border-radius: 28px;
+          padding: 22px 18px 26px;
+        }
+
+        .heart-wrap {
+          width: min(160px, 44vw);
+        }
+
+        .actions,
+        .button-area {
+          min-height: 220px;
+        }
+
+        .yes-anchor {
+          left: 50%;
+          right: auto;
+          width: calc(100% - 24px);
+          max-width: 100%;
+          transform: translateX(-50%);
+        }
+
+        .yes-button {
+          width: 100%;
+          min-width: 0;
+          min-height: 80px;
+          font-size: 1.65rem;
+        }
+
+        .no-button {
+          left: calc(50% + 88px);
+          top: 116px;
+          min-width: 66px;
+          min-height: 46px;
+          padding: 10px 16px;
+          font-size: 0.95rem;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .scene {
+          padding: 16px;
+        }
+
+        .actions,
+        .button-area {
+          min-height: 240px;
+        }
+
+        .yes-button {
+          min-height: 76px;
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scene">
+      <section class="card" aria-live="polite">
+        <div class="sparkles" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <div class="question">
+          <div class="intro-badge">One very important question</div>
+
+          <div class="heart-wrap" aria-hidden="true">
+            <div class="heart"></div>
+            <div class="heart-face"></div>
+            <div class="heart-accent"></div>
+          </div>
+
+          <h1>Zeynep, will you be mine?</h1>
+          <p class="lead">
+            I made this page just for you, so there is really only one sensible answer here.
+          </p>
+
+          <div class="actions">
+            <div class="button-area" id="button-area">
+              <div class="yes-anchor">
+                <button class="yes-button" id="yes-button" type="button">Yes</button>
+              </div>
+              <button
+                class="no-button"
+                id="no-button"
+                type="button"
+                aria-label="No"
+                tabindex="-1"
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          <p class="hint">The tiny button is not serious and will keep running away.</p>
+        </div>
+
+        <div class="success" id="success">
+          <div class="intro-badge">Best answer chosen</div>
+          <h2>You made my day.</h2>
+          <p>
+            Knew you would say yes. Now I get to keep smiling about this every time I think of you.
+          </p>
+
+          <div class="photo-frame" id="photo-frame">
+            <img id="success-image" alt="A special photo for Zeynep" hidden>
+            <div class="photo-fallback" id="photo-fallback">
+              Add your photo path in this file and it will appear here after she presses Yes.
+            </div>
+          </div>
+
+          <p class="photo-note">
+            Replace the image path in <code>SUCCESS_IMAGE_SRC</code> near the bottom of this file.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Replace this with the image you want revealed after "Yes" is clicked.
+      // Example: const SUCCESS_IMAGE_SRC = "./zeynep-photo.jpg";
+      const SUCCESS_IMAGE_SRC = "";
+
+      const area = document.getElementById("button-area");
+      const yesButton = document.getElementById("yes-button");
+      const noButton = document.getElementById("no-button");
+      const successImage = document.getElementById("success-image");
+      const photoFallback = document.getElementById("photo-fallback");
+      let hopCount = 0;
+      let lockMovement = false;
+
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      function moveNoButton() {
+        if (lockMovement) {
+          return;
+        }
+
+        const areaRect = area.getBoundingClientRect();
+        const noRect = noButton.getBoundingClientRect();
+        const yesRect = yesButton.getBoundingClientRect();
+
+        const padding = window.innerWidth <= 700 ? 8 : 16;
+        const maxLeft = areaRect.width - noRect.width - padding;
+        const maxTop = areaRect.height - noRect.height - padding;
+        const yesLeft = yesRect.left - areaRect.left - padding;
+        const yesRight = yesRect.right - areaRect.left + padding;
+        const yesTop = yesRect.top - areaRect.top - padding;
+        const yesBottom = yesRect.bottom - areaRect.top + padding;
+
+        let nextLeft = 0;
+        let nextTop = 0;
+        let attempts = 0;
+
+        do {
+          nextLeft = padding + Math.random() * Math.max(1, maxLeft - padding);
+          nextTop = padding + Math.random() * Math.max(1, maxTop - padding);
+          attempts += 1;
+        } while (
+          attempts < 40 &&
+          nextLeft < yesRight &&
+          nextLeft + noRect.width > yesLeft &&
+          nextTop < yesBottom &&
+          nextTop + noRect.height > yesTop
+        );
+
+        noButton.style.left = clamp(nextLeft, padding, maxLeft) + "px";
+        noButton.style.top = clamp(nextTop, padding, maxTop) + "px";
+        noButton.style.transform =
+          "translateY(" + ((hopCount % 2 === 0 ? -1 : 1) * 4) + "px) rotate(" + ((Math.random() * 18) - 9).toFixed(2) + "deg)";
+        hopCount += 1;
+      }
+
+      function dodge(event) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        moveNoButton();
+      }
+
+      function addFloatingHeart() {
+        const heart = document.createElement("div");
+        heart.className = "floating-heart";
+        heart.textContent = "💗";
+        heart.style.left = 50 + Math.random() * (window.innerWidth - 100) + "px";
+        heart.style.top = window.innerHeight * 0.55 + Math.random() * 60 + "px";
+        document.body.appendChild(heart);
+        window.setTimeout(() => heart.remove(), 1300);
+      }
+
+      noButton.addEventListener("mouseenter", dodge);
+      noButton.addEventListener("focus", dodge);
+      noButton.addEventListener("pointerdown", dodge);
+      noButton.addEventListener("touchstart", dodge, { passive: false });
+      noButton.addEventListener("click", dodge);
+
+      successImage.addEventListener("error", () => {
+        successImage.hidden = true;
+        photoFallback.hidden = false;
+      });
+
+      document.addEventListener("pointermove", (event) => {
+        if (window.innerWidth > 700 || lockMovement) {
+          return;
+        }
+
+        const noRect = noButton.getBoundingClientRect();
+        const dx = event.clientX - (noRect.left + noRect.width / 2);
+        const dy = event.clientY - (noRect.top + noRect.height / 2);
+        if (Math.hypot(dx, dy) < 90) {
+          moveNoButton();
+        }
+      });
+
+      yesButton.addEventListener("click", () => {
+        lockMovement = true;
+        document.body.classList.add("is-answered");
+        addFloatingHeart();
+        addFloatingHeart();
+
+        if (SUCCESS_IMAGE_SRC.trim()) {
+          successImage.src = SUCCESS_IMAGE_SRC;
+          successImage.hidden = false;
+          photoFallback.hidden = true;
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        if (!lockMovement) {
+          moveNoButton();
+        }
+      });
+
+      window.setTimeout(moveNoButton, 120);
+    </script>
+  </body>
+</html>
