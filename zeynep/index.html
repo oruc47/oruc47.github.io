@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive">
-    <title>A Tiny Question</title>
+    <title>Zeynep</title>
     <style>
       :root {
         --bg-1: #ffe7ef;
@@ -424,11 +424,68 @@
         font-size: 0.92rem;
       }
 
+      .compliment-banner {
+        width: min(100%, 520px);
+        margin: 0 auto 20px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        box-shadow:
+          0 14px 28px rgba(116, 62, 85, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      }
+
+      .compliment-track {
+        display: flex;
+        width: max-content;
+        gap: 44px;
+        padding: 13px 0;
+        white-space: nowrap;
+        color: #b93b74;
+        font-size: clamp(0.98rem, 2.3vw, 1.15rem);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        animation: compliment-slide 11s linear infinite;
+      }
+
+      .compliment-track span {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .compliment-track span::before {
+        content: "❤";
+        font-size: 0.9em;
+      }
+
+      .heart-shower {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 20;
+      }
+
       .floating-heart {
         position: fixed;
         font-size: 26px;
         pointer-events: none;
         animation: heart-rise 1.3s ease forwards;
+        z-index: 24;
+      }
+
+      .heart-drop {
+        position: fixed;
+        top: -12vh;
+        pointer-events: none;
+        opacity: 0;
+        will-change: transform, opacity;
+        animation-name: heart-fall;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
+        z-index: 22;
       }
 
       body.is-answered .question {
@@ -471,6 +528,29 @@
         to {
           opacity: 0;
           transform: translateY(-80px) scale(1.25) rotate(14deg);
+        }
+      }
+
+      @keyframes heart-fall {
+        0% {
+          opacity: 0;
+          transform: translate3d(0, -10vh, 0) rotate(0deg) scale(0.8);
+        }
+        15% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: translate3d(var(--drift, 0px), 118vh, 0) rotate(var(--spin, 240deg)) scale(1.15);
+        }
+      }
+
+      @keyframes compliment-slide {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
         }
       }
 
@@ -534,6 +614,7 @@
   <body>
     <main class="scene">
       <section class="card" aria-live="polite">
+        <div class="heart-shower" id="heart-shower" aria-hidden="true"></div>
         <div class="sparkles" aria-hidden="true">
           <span></span>
           <span></span>
@@ -582,30 +663,34 @@
             Knew you would say yes. Now I get to keep smiling about this every time I think of you.
           </p>
 
-          <div class="photo-frame" id="photo-frame">
-            <img id="success-image" alt="A special photo for Zeynep" hidden>
-            <div class="photo-fallback" id="photo-fallback">
-              Add your photo path in this file and it will appear here after she presses Yes.
+          <div class="compliment-banner" aria-hidden="true">
+            <div class="compliment-track">
+              <span>Ne kadar zarif, ne kadar tatlı, ne kadar güzel</span>
+              <span>Ne kadar zarif, ne kadar tatlı, ne kadar güzel</span>
+              <span>Ne kadar zarif, ne kadar tatlı, ne kadar güzel</span>
+              <span>Ne kadar zarif, ne kadar tatlı, ne kadar güzel</span>
             </div>
           </div>
 
-          <p class="photo-note">
-            Replace the image path in <code>SUCCESS_IMAGE_SRC</code> near the bottom of this file.
-          </p>
+          <div class="photo-frame" id="photo-frame">
+            <img id="success-image" alt="A special photo for Zeynep" hidden>
+            <div class="photo-fallback" id="photo-fallback">
+              The photo could not be loaded, but the answer is still perfect.
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
     <script>
-      // Replace this with the image you want revealed after "Yes" is clicked.
-      // Example: const SUCCESS_IMAGE_SRC = "./zeynep-photo.jpg";
-      const SUCCESS_IMAGE_SRC = "";
+      const SUCCESS_IMAGE_SRC = "./zeynep-photo.JPG";
 
       const area = document.getElementById("button-area");
       const yesButton = document.getElementById("yes-button");
       const noButton = document.getElementById("no-button");
       const successImage = document.getElementById("success-image");
       const photoFallback = document.getElementById("photo-fallback");
+      const heartShower = document.getElementById("heart-shower");
       let hopCount = 0;
       let lockMovement = false;
 
@@ -664,11 +749,39 @@
       function addFloatingHeart() {
         const heart = document.createElement("div");
         heart.className = "floating-heart";
-        heart.textContent = "💗";
+        heart.textContent = ["💗", "💖", "💕", "💘"][Math.floor(Math.random() * 4)];
         heart.style.left = 50 + Math.random() * (window.innerWidth - 100) + "px";
         heart.style.top = window.innerHeight * 0.55 + Math.random() * 60 + "px";
         document.body.appendChild(heart);
         window.setTimeout(() => heart.remove(), 1300);
+      }
+
+      function launchHeartShower() {
+        const hearts = ["💗", "💖", "💕", "💞", "💘"];
+
+        for (let index = 0; index < 34; index += 1) {
+          const heart = document.createElement("div");
+          const duration = 2.8 + Math.random() * 2.2;
+          const delay = Math.random() * 0.9;
+          const left = Math.random() * 100;
+          const size = 18 + Math.random() * 22;
+          const drift = -70 + Math.random() * 140;
+          const spin = -180 + Math.random() * 360;
+
+          heart.className = "heart-drop";
+          heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+          heart.style.left = left + "vw";
+          heart.style.fontSize = size + "px";
+          heart.style.animationDuration = duration + "s";
+          heart.style.animationDelay = delay + "s";
+          heart.style.setProperty("--drift", drift + "px");
+          heart.style.setProperty("--spin", spin + "deg");
+          heartShower.appendChild(heart);
+
+          window.setTimeout(() => {
+            heart.remove();
+          }, (duration + delay) * 1000 + 200);
+        }
       }
 
       noButton.addEventListener("mouseenter", dodge);
@@ -698,8 +811,10 @@
       yesButton.addEventListener("click", () => {
         lockMovement = true;
         document.body.classList.add("is-answered");
-        addFloatingHeart();
-        addFloatingHeart();
+        for (let index = 0; index < 8; index += 1) {
+          window.setTimeout(addFloatingHeart, index * 120);
+        }
+        launchHeartShower();
 
         if (SUCCESS_IMAGE_SRC.trim()) {
           successImage.src = SUCCESS_IMAGE_SRC;
