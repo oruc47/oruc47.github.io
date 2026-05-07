@@ -18,57 +18,34 @@
       :root {
         --rose: #e88aa3;
         --rose-deep: #c75e7e;
-        --rose-light: #f8d6d8;
         --blush: #ffe7ee;
         --cream: #fdf6ee;
-        --cream-2: #f7ead7;
         --sage: #9bbf95;
         --sage-deep: #5e8a64;
-        --leaf: #6f9a6a;
         --gold: #c9a26a;
         --ink: #3a2a30;
-        --muted: #715661;
-        --shadow: 28px 40px 80px -36px rgba(94, 47, 64, 0.35);
+        --muted: #6f5862;
+        --shadow: 0 30px 60px -32px rgba(94, 47, 64, 0.45);
         --serif: "Cormorant Garamond", "Playfair Display", "Times New Roman",
           serif;
         --sans: "Avenir Next", "Helvetica Neue", "Segoe UI", system-ui,
           sans-serif;
         --hand: "Caveat", "Snell Roundhand", "Bradley Hand", cursive;
+        --dur: 0.8s;
+        --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      /* removed scroll-behavior: smooth — browser-native scroll feels better
-         and avoids stutters during fast finger-flick scrolling on iPhone */
-
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
 
       body {
         font-family: var(--sans);
         color: var(--ink);
         background:
-          radial-gradient(
-            circle at 12% 8%,
-            rgba(232, 138, 163, 0.18),
-            transparent 40%
-          ),
-          radial-gradient(
-            circle at 88% 14%,
-            rgba(155, 191, 149, 0.22),
-            transparent 45%
-          ),
-          radial-gradient(
-            circle at 50% 90%,
-            rgba(247, 234, 215, 0.6),
-            transparent 50%
-          ),
-          linear-gradient(180deg, #fdf6ee 0%, #f8e8df 50%, #eddcd2 100%);
+          radial-gradient(circle at 18% 8%, rgba(232, 138, 163, 0.16), transparent 42%),
+          radial-gradient(circle at 82% 18%, rgba(155, 191, 149, 0.18), transparent 48%),
+          radial-gradient(circle at 50% 95%, rgba(247, 234, 215, 0.55), transparent 55%),
+          linear-gradient(180deg, #fdf6ee 0%, #faeadf 50%, #f0dccf 100%);
         background-attachment: fixed;
         overflow-x: hidden;
         line-height: 1.55;
@@ -82,71 +59,19 @@
         image-orientation: none;
       }
 
-      /* ============ SVG SPRITES (hidden) ============ */
-      .svg-defs {
-        position: absolute;
-        width: 0;
-        height: 0;
-        overflow: hidden;
-      }
+      .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-      /* ============ FLOATING SKY ============ */
-      .sky {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100lvh; /* large viewport height — does not change with URL bar */
-        pointer-events: none;
-        overflow: hidden;
-        z-index: 0;
-      }
+      /* ============ DECORATIVE SVG SPRITES ============ */
 
-      .sky .bit {
-        position: absolute;
-        top: -8vh;
-        opacity: 0;
-        animation: drift linear infinite;
-      }
-
-      .sky .bit svg {
-        display: block;
-        width: 100%;
-        height: 100%;
-        filter: drop-shadow(0 3px 6px rgba(199, 94, 126, 0.14));
-      }
-
-      /* Calm straight-down drift, no rotation (rotation was the main
-         GPU-thrash cause on iPhone). vh is stable on modern iOS Safari. */
-      @keyframes drift {
-        0% {
-          transform: translate3d(0, 0, 0);
-          opacity: 0;
-        }
-        12% {
-          opacity: 0.85;
-        }
-        88% {
-          opacity: 0.7;
-        }
-        100% {
-          transform: translate3d(0, 120vh, 0);
-          opacity: 0;
-        }
-      }
-
-      /* ============ PAGE & SECTIONS ============ */
-      main {
-        position: relative;
-        z-index: 1;
-      }
+      /* ============ SECTIONS ============ */
+      main { position: relative; z-index: 1; }
 
       section {
         position: relative;
         min-height: 100svh;
         display: grid;
         place-items: center;
-        padding: 56px 22px;
+        padding: 56px 22px 72px;
       }
 
       .inner {
@@ -209,183 +134,160 @@
         width: 1px;
         height: 56px;
         margin: 14px auto 0;
-        background: linear-gradient(
-          to bottom,
-          rgba(199, 94, 126, 0.7),
-          transparent
-        );
-        animation: pulseLine 2.4s ease-in-out infinite;
+        background: linear-gradient(to bottom, rgba(199, 94, 126, 0.7), transparent);
+        animation: pulseLine 2.6s ease-in-out infinite;
       }
 
       @keyframes pulseLine {
-        0%,
-        100% {
-          opacity: 0.3;
-          transform: scaleY(0.6);
-          transform-origin: top;
-        }
-        50% {
-          opacity: 1;
-          transform: scaleY(1);
-        }
+        0%, 100% { opacity: 0.3; transform: scaleY(0.6); transform-origin: top; }
+        50%      { opacity: 1; transform: scaleY(1); }
       }
 
-      /* The big floral header on the cover */
       .bouquet {
-        width: min(320px, 80vw);
+        width: min(300px, 78vw);
         margin: 0 auto 8px;
         opacity: 0;
-        animation: bouquetIn 1.6s 0.15s ease-out forwards;
+        animation: bouquetIn 1.4s 0.15s var(--ease) forwards;
         filter: drop-shadow(0 14px 28px rgba(199, 94, 126, 0.18));
       }
 
       @keyframes bouquetIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
+        from { opacity: 0; transform: translateY(8px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
       }
 
-      /* gentle sway for the bouquet — slower & smaller for less GPU work */
-      .bouquet .sway-l {
-        transform-origin: 200px 220px;
-        animation: swayL 9s ease-in-out infinite;
-      }
-      .bouquet .sway-r {
-        transform-origin: 200px 220px;
-        animation: swayR 9s ease-in-out infinite;
-      }
-      @keyframes swayL {
-        0%,
-        100% {
-          transform: rotate(-1deg);
-        }
-        50% {
-          transform: rotate(1deg);
-        }
-      }
-      @keyframes swayR {
-        0%,
-        100% {
-          transform: rotate(1deg);
-        }
-        50% {
-          transform: rotate(-1deg);
-        }
+      .bouquet .sway-l { transform-origin: 200px 220px; animation: swayL 11s ease-in-out infinite; }
+      .bouquet .sway-r { transform-origin: 200px 220px; animation: swayR 11s ease-in-out infinite; }
+      @keyframes swayL { 0%,100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+      @keyframes swayR { 0%,100% { transform: rotate(1deg); }  50% { transform: rotate(-1deg); } }
+
+      /* ============ STORY: photo + text in ONE moment ============ */
+      .story {
+        gap: 0;
       }
 
-      /* ============ CHAPTER (photo + text) ============ */
-      .chapter {
-        gap: 22px;
-      }
-
-      .frame {
-        position: relative;
+      .story .stage {
         width: min(440px, 100%);
         margin: 0 auto;
+      }
+
+      .story .frame {
+        position: relative;
         opacity: 0;
         transform: translateY(28px);
         transition:
-          opacity 0.6s ease-out,
-          transform 0.6s ease-out;
-      }
-
-      .frame.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .frame::before {
-        content: "";
-        position: absolute;
-        inset: -10px;
-        border: 1px solid rgba(201, 162, 106, 0.45);
-        border-radius: 22px;
-        pointer-events: none;
-        opacity: 0.7;
-      }
-
-      .frame img {
-        width: 100%;
-        height: auto;
-        border-radius: 14px;
+          opacity var(--dur) var(--ease),
+          transform var(--dur) var(--ease);
+        border-radius: 16px;
+        overflow: hidden;
         box-shadow: var(--shadow);
         background: var(--cream);
       }
 
-      .frame .corner {
-        position: absolute;
-        width: 84px;
-        height: 84px;
-        opacity: 0.95;
-        pointer-events: none;
-      }
-
-      .frame .corner.tl {
-        top: -42px;
-        left: -34px;
-      }
-
-      .frame .corner.br {
-        bottom: -38px;
-        right: -28px;
-        transform: rotate(180deg);
-      }
-
-      figcaption,
-      .verse {
-        margin-top: 26px;
-        opacity: 0;
-        transform: translateY(16px);
-        transition:
-          opacity 0.55s ease-out 0.12s,
-          transform 0.55s ease-out 0.12s;
-      }
-
-      .verse.visible,
-      figcaption.visible {
+      .story.visible .frame {
         opacity: 1;
         transform: translateY(0);
       }
 
-      .verse {
+      .story .frame::after {
+        content: "";
+        position: absolute;
+        inset: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 10px;
+        pointer-events: none;
+      }
+
+      /* Subtle Ken Burns while in view */
+      .story .frame img {
+        width: 100%;
+        height: auto;
+        display: block;
+        transform: scale(1.02);
+        transform-origin: center center;
+        transition: transform 14s linear;
+      }
+
+      .story.visible .frame img {
+        transform: scale(1.08) translate3d(-1%, -1.5%, 0);
+      }
+
+      /* Decorative heart on the frame corner */
+      .heart-corner {
+        position: absolute;
+        width: 38px;
+        height: 38px;
+        top: -14px;
+        right: -10px;
+        z-index: 2;
+        opacity: 0;
+        transform: scale(0.6) rotate(-12deg);
+        transition:
+          opacity 0.7s var(--ease) 0.35s,
+          transform 0.7s var(--ease) 0.35s;
+        filter: drop-shadow(0 4px 8px rgba(199, 94, 126, 0.35));
+      }
+
+      .story.visible .heart-corner {
+        opacity: 1;
+        transform: scale(1) rotate(-8deg);
+      }
+
+      .story .text {
+        margin-top: 28px;
+        opacity: 0;
+        transform: translateY(14px);
+        transition:
+          opacity var(--dur) var(--ease) 0.25s,
+          transform var(--dur) var(--ease) 0.25s;
+      }
+
+      .story.visible .text { opacity: 1; transform: translateY(0); }
+
+      .story .lead {
         font-family: var(--serif);
         font-size: clamp(22px, 5.6vw, 30px);
         line-height: 1.35;
         color: var(--ink);
+        margin: 0;
         letter-spacing: 0.005em;
       }
 
-      .verse .accent {
+      .story .lead em {
         font-style: italic;
         color: var(--rose-deep);
       }
 
-      figcaption {
+      .story .sub {
+        margin: 14px auto 0;
         font-family: var(--serif);
         font-style: italic;
-        font-size: clamp(20px, 5vw, 26px);
-        line-height: 1.45;
+        font-size: clamp(18px, 4.6vw, 22px);
+        line-height: 1.5;
         color: var(--muted);
+        max-width: 420px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity var(--dur) var(--ease) 0.5s,
+          transform var(--dur) var(--ease) 0.5s;
       }
 
-      figcaption strong {
+      .story.visible .sub { opacity: 1; transform: translateY(0); }
+
+      .story .sub strong {
         font-style: normal;
         font-weight: 600;
         color: var(--rose-deep);
       }
 
-      .note {
+      .story .whisper {
         display: block;
+        margin-top: 12px;
         font-family: var(--hand);
         font-style: normal;
         color: var(--sage-deep);
         font-size: 22px;
-        margin-top: 14px;
         line-height: 1.3;
       }
 
@@ -394,73 +296,19 @@
         vertical-align: -0.18em;
         width: 1em;
         height: 1em;
-        margin: 0 0.08em;
+        margin: 0 0.06em;
       }
 
-      /* ============ THANK-YOU CARDS ============ */
-      .thanks {
-        gap: 18px;
-      }
-
-      .thanks .ornament {
-        width: 86px;
-        height: 86px;
-        margin: 0 auto;
-        opacity: 0;
-        transform: translateY(10px);
-        transition:
-          opacity 0.5s ease-out,
-          transform 0.5s ease-out;
-      }
-
-      .thanks.visible .ornament {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .thanks .label {
-        margin-top: 10px;
-        font-family: var(--serif);
-        font-style: italic;
-        color: var(--rose-deep);
-        font-size: 14px;
-        letter-spacing: 0.32em;
-        text-transform: uppercase;
-        opacity: 0;
-        transition: opacity 0.5s ease-out 0.08s;
-      }
-
-      .thanks.visible .label {
-        opacity: 1;
-      }
-
-      .thanks .line {
-        margin-top: 22px;
-        font-family: var(--serif);
-        font-size: clamp(28px, 7vw, 38px);
-        line-height: 1.3;
-        color: var(--ink);
-        letter-spacing: -0.005em;
-        opacity: 0;
-        transform: translateY(14px);
-        transition:
-          opacity 0.55s ease-out 0.18s,
-          transform 0.55s ease-out 0.18s;
-      }
-
-      .thanks.visible .line {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      .thanks .line span {
-        font-style: italic;
-        color: var(--rose-deep);
-      }
-
-      /* ============ PHOTO BREAK (no text) ============ */
-      .interlude .frame {
-        max-width: 380px;
+      /* Section accent stripe between sections (a tiny sprig) */
+      .accent-rule {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 64px;
+        height: 24px;
+        opacity: 0.55;
+        pointer-events: none;
       }
 
       /* ============ CLOSING ============ */
@@ -470,12 +318,13 @@
         font-weight: 500;
         font-size: clamp(28px, 7vw, 40px);
         margin: 0 0 14px;
+        line-height: 1.25;
       }
 
       .closing p {
         font-family: var(--serif);
         font-size: clamp(20px, 5vw, 24px);
-        line-height: 1.5;
+        line-height: 1.55;
         color: var(--ink);
       }
 
@@ -486,104 +335,51 @@
         margin-top: 28px;
       }
 
-      .heart-burst {
+      /* Calm heart cluster — no infinite animations, just a beautiful arrangement */
+      .heart-cluster {
         position: relative;
-        height: 110px;
-        margin: 18px auto 0;
         width: 240px;
+        height: 110px;
+        margin: 22px auto 6px;
+        opacity: 0;
+        transform: translateY(10px);
+        transition:
+          opacity 1s var(--ease) 0.2s,
+          transform 1s var(--ease) 0.2s;
       }
 
-      .heart-burst .hb {
+      .closing.visible .heart-cluster {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .heart-cluster .h {
         position: absolute;
-        top: 50%;
-        left: 50%;
         width: 26px;
         height: 26px;
-        opacity: 0;
-        transform: translate(-50%, -50%);
-        animation: hb 4s ease-out infinite;
       }
 
-      .heart-burst .hb svg {
-        width: 100%;
-        height: 100%;
-      }
+      .heart-cluster .h svg { width: 100%; height: 100%; }
 
-      .heart-burst .hb:nth-child(1) {
-        animation-delay: 0s;
-        --tx: -82px;
-        --ty: -28px;
-      }
-      .heart-burst .hb:nth-child(2) {
-        animation-delay: 0.4s;
-        --tx: 70px;
-        --ty: -34px;
-      }
-      .heart-burst .hb:nth-child(3) {
-        animation-delay: 0.8s;
-        --tx: -50px;
-        --ty: 36px;
-      }
-      .heart-burst .hb:nth-child(4) {
-        animation-delay: 1.2s;
-        --tx: 60px;
-        --ty: 32px;
-      }
-      .heart-burst .hb:nth-child(5) {
-        animation-delay: 1.6s;
-        --tx: 0px;
-        --ty: -50px;
-      }
-      .heart-burst .hb:nth-child(6) {
-        animation-delay: 2s;
-        --tx: -22px;
-        --ty: 50px;
-      }
-      .heart-burst .hb:nth-child(7) {
-        animation-delay: 2.4s;
-        --tx: 30px;
-        --ty: -10px;
-      }
+      .heart-cluster .h.h1 { top: 36%; left: 8%;  width: 22px; height: 22px; opacity: 0.7; }
+      .heart-cluster .h.h2 { top: 10%; left: 28%; width: 30px; height: 30px; }
+      .heart-cluster .h.h3 { top: 48%; left: 44%; width: 38px; height: 38px; }
+      .heart-cluster .h.h4 { top: 14%; left: 62%; width: 26px; height: 26px; }
+      .heart-cluster .h.h5 { top: 44%; left: 80%; width: 22px; height: 22px; opacity: 0.7; }
 
-      @keyframes hb {
-        0% {
-          opacity: 0;
-          transform: translate(-50%, -50%) scale(0.4);
-        }
-        18% {
-          opacity: 1;
-        }
-        80% {
-          opacity: 0.95;
-          transform: translate(
-              calc(-50% + var(--tx)),
-              calc(-50% + var(--ty))
-            )
-            scale(1.05);
-        }
-        100% {
-          opacity: 0;
-          transform: translate(
-              calc(-50% + var(--tx)),
-              calc(-50% + var(--ty) - 14px)
-            )
-            scale(1.25);
-        }
+      /* gentle pulse only on the central heart, slow */
+      .heart-cluster .h.h3 svg {
+        animation: gentlePulse 4.5s ease-in-out infinite;
+        transform-origin: center;
       }
-
-      .sprig {
-        display: block;
-        margin: 0 auto 12px;
-        opacity: 0.8;
+      @keyframes gentlePulse {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.06); }
       }
 
       @media (max-width: 380px) {
-        .verse {
-          font-size: 22px;
-        }
-        .thanks .line {
-          font-size: 26px;
-        }
+        .story .lead { font-size: 22px; }
+        .story .sub  { font-size: 17.5px; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -591,55 +387,46 @@
           animation-duration: 0.01ms !important;
           transition-duration: 0.01ms !important;
         }
-        .frame,
-        .verse,
-        figcaption,
-        .thanks,
-        .thanks .ornament,
-        .thanks .label,
-        .thanks .line {
-          opacity: 1;
-          transform: none;
+        .story .frame,
+        .story .text,
+        .story .sub,
+        .story .heart-corner,
+        .heart-cluster {
+          opacity: 1 !important;
+          transform: none !important;
         }
+        .story .frame img { transform: none !important; }
       }
     </style>
   </head>
+
   <body>
-    <!-- ===================== SVG SPRITES ===================== -->
-    <svg
-      class="svg-defs"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
+    <!-- =================== SVG SPRITES =================== -->
+    <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs>
         <radialGradient id="rosePetal" cx="50%" cy="40%" r="65%">
-          <stop offset="0%" stop-color="#fff5f8" />
+          <stop offset="0%"  stop-color="#fff5f8" />
           <stop offset="55%" stop-color="#f3a8bd" />
           <stop offset="100%" stop-color="#c75e7e" />
         </radialGradient>
         <radialGradient id="roseCenter" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stop-color="#fff3a8" />
+          <stop offset="0%"  stop-color="#fff3a8" />
           <stop offset="100%" stop-color="#c9a26a" />
         </radialGradient>
         <radialGradient id="heartGrad" cx="50%" cy="35%" r="65%">
-          <stop offset="0%" stop-color="#ffd6e1" />
+          <stop offset="0%"  stop-color="#ffd6e1" />
           <stop offset="55%" stop-color="#e88aa3" />
           <stop offset="100%" stop-color="#c75e7e" />
         </radialGradient>
         <radialGradient id="leafGrad" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="#c4dcb6" />
+          <stop offset="0%"   stop-color="#c4dcb6" />
           <stop offset="100%" stop-color="#5e8a64" />
         </radialGradient>
         <radialGradient id="lilyPetal" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="#ffffff" />
+          <stop offset="0%"   stop-color="#ffffff" />
           <stop offset="100%" stop-color="#f7e8d3" />
         </radialGradient>
-        <radialGradient id="violetPetal" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="#f0e2ff" />
-          <stop offset="100%" stop-color="#a98bd9" />
-        </radialGradient>
 
-        <!-- HEART -->
         <symbol id="i-heart" viewBox="0 0 32 32">
           <path
             d="M16 28 C 6 21, 1 14, 4 8 C 7 2, 13 2, 16 8 C 19 2, 25 2, 28 8 C 31 14, 26 21, 16 28 Z"
@@ -650,136 +437,13 @@
           />
           <path
             d="M9 8 C 8 11, 10 14, 12 16"
-            fill="none"
-            stroke="#fff"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            opacity="0.55"
+            fill="none" stroke="#fff" stroke-width="1.6"
+            stroke-linecap="round" opacity="0.55"
           />
         </symbol>
 
-        <!-- SMALL ROSE FLOWER -->
-        <symbol id="i-rose" viewBox="0 0 32 32">
-          <g transform="translate(16 16)">
-            <ellipse
-              cx="0"
-              cy="-8"
-              rx="5"
-              ry="8"
-              fill="url(#rosePetal)"
-              stroke="#c75e7e"
-              stroke-width="0.4"
-            />
-            <ellipse
-              cx="0"
-              cy="-8"
-              rx="5"
-              ry="8"
-              fill="url(#rosePetal)"
-              stroke="#c75e7e"
-              stroke-width="0.4"
-              transform="rotate(72)"
-            />
-            <ellipse
-              cx="0"
-              cy="-8"
-              rx="5"
-              ry="8"
-              fill="url(#rosePetal)"
-              stroke="#c75e7e"
-              stroke-width="0.4"
-              transform="rotate(144)"
-            />
-            <ellipse
-              cx="0"
-              cy="-8"
-              rx="5"
-              ry="8"
-              fill="url(#rosePetal)"
-              stroke="#c75e7e"
-              stroke-width="0.4"
-              transform="rotate(216)"
-            />
-            <ellipse
-              cx="0"
-              cy="-8"
-              rx="5"
-              ry="8"
-              fill="url(#rosePetal)"
-              stroke="#c75e7e"
-              stroke-width="0.4"
-              transform="rotate(288)"
-            />
-            <circle r="3" fill="url(#roseCenter)" />
-          </g>
-        </symbol>
-
-        <!-- LILY OF THE VALLEY (mom's May birth flower) -->
-        <symbol id="i-lily" viewBox="0 0 32 32">
-          <g>
-            <path
-              d="M16 4 L16 28"
-              stroke="#5e8a64"
-              stroke-width="0.8"
-              fill="none"
-              stroke-linecap="round"
-            />
-            <ellipse cx="11" cy="9" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-            <ellipse cx="20" cy="13" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-            <ellipse cx="12" cy="18" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-            <ellipse cx="20" cy="23" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-          </g>
-        </symbol>
-
-        <!-- LEAF -->
-        <symbol id="i-leaf" viewBox="0 0 32 32">
-          <path
-            d="M16 4 C 7 12, 7 22, 16 28 C 25 22, 25 12, 16 4 Z"
-            fill="url(#leafGrad)"
-            stroke="#5e8a64"
-            stroke-width="0.6"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M16 6 L16 28"
-            stroke="#5e8a64"
-            stroke-width="0.8"
-            fill="none"
-          />
-          <path
-            d="M16 12 L11 16 M16 12 L21 16 M16 18 L11 22 M16 18 L21 22"
-            stroke="#5e8a64"
-            stroke-width="0.5"
-            fill="none"
-            opacity="0.7"
-          />
-        </symbol>
-
-        <!-- VIOLET-LIKE FLOWER -->
-        <symbol id="i-violet" viewBox="0 0 32 32">
-          <g transform="translate(16 16)">
-            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" />
-            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(72)" />
-            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(144)" />
-            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(216)" />
-            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(288)" />
-            <circle r="2.5" fill="#f7e070" />
-          </g>
-        </symbol>
-
-        <!-- SPARKLE / 4-pt star -->
-        <symbol id="i-spark" viewBox="0 0 32 32">
-          <path
-            d="M16 2 L18 14 L30 16 L18 18 L16 30 L14 18 L2 16 L14 14 Z"
-            fill="#f7d77a"
-            stroke="#c9a26a"
-            stroke-width="0.4"
-          />
-        </symbol>
-
-        <!-- COFFEE CUP -->
         <symbol id="i-coffee" viewBox="0 0 32 32">
-          <g fill="none" stroke="#7a4a32" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+          <g fill="none" stroke="#7a4a32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 11 L5 22 C 5 25, 8 27, 12 27 L 18 27 C 22 27, 25 25, 25 22 L 25 11 Z" fill="#fff7ee" />
             <path d="M25 14 C 29 14, 30 16, 30 18 C 30 20, 29 22, 25 22" />
             <path d="M9 4 C 8 6, 10 7, 9 9" />
@@ -787,42 +451,42 @@
             <path d="M19 4 C 18 6, 20 7, 19 9" />
           </g>
         </symbol>
+
+        <symbol id="i-spark" viewBox="0 0 32 32">
+          <path
+            d="M16 2 L18 14 L30 16 L18 18 L16 30 L14 18 L2 16 L14 14 Z"
+            fill="#f7d77a" stroke="#c9a26a" stroke-width="0.4"
+          />
+        </symbol>
+
+        <symbol id="i-sprig" viewBox="0 0 64 24">
+          <g fill="none" stroke="#7ea36e" stroke-width="1.2" stroke-linecap="round">
+            <path d="M2 12 C 18 4, 46 20, 62 12" />
+          </g>
+          <g fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.5">
+            <ellipse cx="14" cy="9" rx="3" ry="5" transform="rotate(-25 14 9)" />
+            <ellipse cx="26" cy="14" rx="3" ry="5" transform="rotate(15 26 14)" />
+            <ellipse cx="38" cy="10" rx="3" ry="5" transform="rotate(-15 38 10)" />
+            <ellipse cx="50" cy="14" rx="3" ry="5" transform="rotate(20 50 14)" />
+          </g>
+          <circle cx="32" cy="12" r="2.4" fill="#e88aa3" stroke="#c75e7e" stroke-width="0.4" />
+        </symbol>
       </defs>
     </svg>
 
-    <!-- ===================== FLOATING SKY ===================== -->
-    <div class="sky" id="sky" aria-hidden="true"></div>
-
     <main>
-      <!-- ============ COVER ============ -->
+      <!-- =================== COVER =================== -->
       <section class="cover">
         <div class="inner">
-          <!-- Hand-drawn floral bouquet (proper, layered, illustrated) -->
-          <svg
-            class="bouquet"
-            viewBox="0 0 400 320"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <!-- soft halo -->
-            <ellipse cx="200" cy="170" rx="160" ry="120" fill="#fff" opacity="0.35" />
+          <svg class="bouquet" viewBox="0 0 400 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <ellipse cx="200" cy="170" rx="160" ry="120" fill="#fff" opacity="0.32" />
 
-            <!-- LEFT SWAYING SPRAY -->
             <g class="sway-l">
-              <!-- stem 1 -->
-              <path
-                d="M200 240 C 150 200, 110 150, 80 90"
-                fill="none"
-                stroke="#5e8a64"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              />
-              <!-- leaves on stem 1 -->
+              <path d="M200 240 C 150 200, 110 150, 80 90"
+                    fill="none" stroke="#5e8a64" stroke-width="2.2" stroke-linecap="round" />
               <ellipse cx="120" cy="170" rx="9" ry="20" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-50 120 170)" />
               <ellipse cx="100" cy="135" rx="8" ry="18" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-65 100 135)" />
-              <ellipse cx="88" cy="105" rx="7" ry="15" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-40 88 105)" />
-
-              <!-- flower head 1 (rose) -->
+              <ellipse cx="88"  cy="105" rx="7" ry="15" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-40 88 105)" />
               <g transform="translate(78 80)">
                 <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" />
                 <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(72)" />
@@ -832,34 +496,17 @@
                 <circle r="6" fill="url(#roseCenter)" />
                 <circle r="2" fill="#7a5226" opacity="0.7" />
               </g>
-
-              <!-- small bud -->
               <g transform="translate(140 195)">
-                <path
-                  d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z"
-                  fill="url(#rosePetal)"
-                  stroke="#c75e7e"
-                  stroke-width="0.5"
-                />
+                <path d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.5" />
               </g>
             </g>
 
-            <!-- RIGHT SWAYING SPRAY -->
             <g class="sway-r">
-              <!-- stem 2 -->
-              <path
-                d="M200 240 C 250 200, 290 150, 320 90"
-                fill="none"
-                stroke="#5e8a64"
-                stroke-width="2.2"
-                stroke-linecap="round"
-              />
-              <!-- leaves on stem 2 -->
+              <path d="M200 240 C 250 200, 290 150, 320 90"
+                    fill="none" stroke="#5e8a64" stroke-width="2.2" stroke-linecap="round" />
               <ellipse cx="280" cy="170" rx="9" ry="20" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(50 280 170)" />
               <ellipse cx="300" cy="135" rx="8" ry="18" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(65 300 135)" />
               <ellipse cx="312" cy="105" rx="7" ry="15" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(40 312 105)" />
-
-              <!-- flower head 2 (rose) -->
               <g transform="translate(322 80)">
                 <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(20)" />
                 <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(92)" />
@@ -869,67 +516,40 @@
                 <circle r="5.5" fill="url(#roseCenter)" />
                 <circle r="2" fill="#7a5226" opacity="0.7" />
               </g>
-
-              <!-- small bud -->
               <g transform="translate(260 195)">
-                <path
-                  d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z"
-                  fill="url(#rosePetal)"
-                  stroke="#c75e7e"
-                  stroke-width="0.5"
-                />
+                <path d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.5" />
               </g>
             </g>
 
-            <!-- CENTER (focal) ROSE — bigger, in front -->
+            <!-- focal rose -->
             <g transform="translate(200 130)">
-              <!-- back petals -->
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" />
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(60)" />
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(120)" />
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(180)" />
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(240)" />
               <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(300)" />
-              <!-- inner petals -->
               <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(30)" />
               <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(150)" />
               <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(270)" />
-              <!-- center -->
               <circle r="9" fill="url(#roseCenter)" stroke="#9a7240" stroke-width="0.5" />
               <circle r="3" fill="#7a5226" opacity="0.8" />
             </g>
 
-            <!-- accent lily-of-the-valley sprig in front (mom's May birth flower) -->
+            <!-- lily-of-the-valley sprig (May birth flower) -->
             <g transform="translate(170 200) rotate(-12)">
               <path d="M0 0 L 0 60" stroke="#5e8a64" stroke-width="1.4" fill="none" />
               <ellipse cx="-6" cy="10" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-              <ellipse cx="6" cy="22" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+              <ellipse cx="6"  cy="22" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
               <ellipse cx="-5" cy="36" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
-              <ellipse cx="6" cy="50" rx="3.5" ry="4.5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+              <ellipse cx="6"  cy="50" rx="3.5" ry="4.5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
             </g>
 
-            <!-- ribbon tying the bouquet -->
+            <!-- ribbon -->
             <g transform="translate(200 240)">
-              <path
-                d="M-22 0 C -10 -6, 10 -6, 22 0 C 10 6, -10 6, -22 0 Z"
-                fill="#e88aa3"
-                stroke="#c75e7e"
-                stroke-width="0.6"
-              />
-              <path
-                d="M-22 0 C -32 8, -36 16, -34 22"
-                fill="none"
-                stroke="#c75e7e"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-              <path
-                d="M22 0 C 32 8, 36 16, 34 22"
-                fill="none"
-                stroke="#c75e7e"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
+              <path d="M-22 0 C -10 -6, 10 -6, 22 0 C 10 6, -10 6, -22 0 Z" fill="#e88aa3" stroke="#c75e7e" stroke-width="0.6" />
+              <path d="M-22 0 C -32 8, -36 16, -34 22" fill="none" stroke="#c75e7e" stroke-width="2" stroke-linecap="round" />
+              <path d="M22 0 C 32 8, 36 16, 34 22" fill="none" stroke="#c75e7e" stroke-width="2" stroke-linecap="round" />
               <ellipse cx="0" cy="0" rx="5" ry="6" fill="#c75e7e" />
             </g>
           </svg>
@@ -937,270 +557,183 @@
           <div class="crest">7 Mayıs</div>
           <h1>Canım <em>Annem</em></h1>
           <div class="date">doğum günün kutlu olsun</div>
-          <p class="lede">
-            Bugün senin günün. Yavaşça aşağı kaydır, küçük bir hediyem var.
-          </p>
+          <p class="lede">Bugün senin günün. Yavaşça aşağı kaydır, küçük bir hediyem var.</p>
           <div class="scroll">aşağı kaydır</div>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 1 — wish ============ -->
-      <section class="chapter">
+      <!-- =================== STORY 1 — wish =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <figure class="frame">
-            <svg class="corner tl" viewBox="0 0 84 84" aria-hidden="true">
-              <use href="#i-rose" x="0" y="0" width="40" height="40" />
-              <use href="#i-leaf" x="22" y="36" width="32" height="32" />
-              <use href="#i-heart" x="42" y="6" width="22" height="22" />
-            </svg>
-            <img
-              src="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG"
-              alt="Genç annem ve ben"
-              loading="eager"
-            />
-          </figure>
-          <p class="verse">
-            Allah sana mutluluk, huzur ve neşe dolu nice yıllar daha
-            <span class="accent">nasip etsin.</span>
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG" alt="Genç annem ve ben" loading="eager" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Doğum günün <em>kutlu olsun</em>, anne.
+              </p>
+              <p class="sub">
+                Allah sana mutluluk, huzur ve neşe dolu nice yıllar daha
+                <strong>nasip etsin.</strong>
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 2 — intro to thank-yous ============ -->
-      <section class="chapter">
+      <!-- =================== STORY 2 — destek =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_5045.jpg"
-              alt="Annem ve bebek ben"
-              loading="lazy"
-            />
-          </figure>
-          <p class="verse">
-            Sana <span class="accent">teşekkür ederim…</span>
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_5045.jpg" alt="Annem ve bebek ben" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Sana <em>teşekkür ederim</em>, bana her zaman
+                <em>destek</em> olduğun için.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ THANK-YOU 1 ============ -->
-      <section class="thanks">
+      <!-- =================== STORY 3 — koşulsuz + ayrıntılar =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-rose" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            bana her zaman <span>destek</span> olduğun için,
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_8104.JPG" alt="Annem ve ben dağ manzarasında" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Beni <em>koşulsuz sevdiğin</em> için.
+              </p>
+              <p class="sub">
+                En küçük <strong>ayrıntıları</strong> bile düşündüğün için.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ THANK-YOU 2 ============ -->
-      <section class="thanks">
+      <!-- =================== STORY 4 — harika anne + fedakarlık =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-heart" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            beni <span>koşulsuz sevdiğin</span> için,
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_8457.JPG" alt="Annem ve ben begonvil çiçeklerinin önünde" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Bu kadar <em>harika bir anne</em> olduğun için.
+              </p>
+              <p class="sub">
+                Bizim için yaptığın onca <strong>fedakârlık</strong> için.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ INTERLUDE — mountains ============ -->
-      <section class="chapter interlude">
+      <!-- =================== STORY 5 — içimi dökebildiğim + sırdaşım =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_8104.JPG"
-              alt="Annem ve ben dağ manzarasında"
-              loading="lazy"
-            />
-          </figure>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_3065.jpg" alt="Annem ve ben" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Her zaman <em>içimi dökebildiğim</em> biri olduğun için.
+              </p>
+              <p class="sub">
+                <strong>Sırdaşım</strong> olduğun için.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ THANK-YOU 3 ============ -->
-      <section class="thanks">
+      <!-- =================== STORY 6 — coffee =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-lily" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            en küçük <span>ayrıntıları</span> bile düşündüğün için,
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/E0E9DEE6-FB62-4D7F-A1A5-857E7A094EBE.JPG" alt="Annem elinde fincanla gülümserken" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Söz veriyorum, <em>her zaman, her yerde</em> sana kahveni ben yapacağım
+                <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="#i-coffee" /></svg>
+              </p>
+              <span class="whisper">ne zaman istersen, oradayım.</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ THANK-YOU 4 ============ -->
-      <section class="thanks">
+      <!-- =================== STORY 7 — zarif =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-rose" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            bu kadar <span>harika bir anne</span> olduğun için,
-          </p>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_1084.jpg" alt="Annem sokakta, çok zarif" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Bu fotoğrafı geçen gün çektim, çünkü o an
+                <em>“ne kadar zarif bir kadın”</em> diye düşündüm kendi kendime.
+              </p>
+              <span class="whisper">gerçekten çok zarifsin, anne.</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ INTERLUDE — bougainvillea ============ -->
-      <section class="chapter interlude">
+      <!-- =================== STORY 8 — favorite recent =================== -->
+      <section class="story">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_8457.JPG"
-              alt="Annem ve ben begonvil çiçeklerinin önünde"
-              loading="lazy"
-            />
-          </figure>
+          <div class="stage">
+            <div class="frame">
+              <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
+              <img src="photos/IMG_0015.jpg" alt="Annemle son zamanlardaki en sevdiğim fotoğrafımız" loading="lazy" />
+            </div>
+            <div class="text">
+              <p class="lead">
+                Son zamanlarda ikimizden çektiğim <em>en sevdiğim</em> fotoğraf bu.
+              </p>
+              <p class="sub">
+                Gözlerin o kadar güzel parlıyor ki
+                <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="#i-spark" /></svg>
+              </p>
+              <span class="whisper">ışığını hep koru, anne.</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- ============ THANK-YOU 5 ============ -->
-      <section class="thanks">
-        <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-violet" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            bizim için yaptığın onca <span>fedakârlık</span> için,
-          </p>
-        </div>
-      </section>
-
-      <!-- ============ THANK-YOU 6 ============ -->
-      <section class="thanks">
-        <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-heart" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            her zaman <span>içimi dökebildiğim</span> biri olduğun için,
-          </p>
-        </div>
-      </section>
-
-      <!-- ============ INTERLUDE — temple ============ -->
-      <section class="chapter interlude">
-        <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_3065.jpg"
-              alt="Annem ve ben"
-              loading="lazy"
-            />
-          </figure>
-        </div>
-      </section>
-
-      <!-- ============ THANK-YOU 7 ============ -->
-      <section class="thanks">
-        <div class="inner">
-          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
-            <use href="#i-rose" />
-          </svg>
-          <div class="label">teşekkür ederim</div>
-          <p class="line">
-            <span>sırdaşım</span> olduğun için.
-          </p>
-        </div>
-      </section>
-
-      <!-- ============ COFFEE — special ============ -->
-      <section class="chapter">
-        <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/E0E9DEE6-FB62-4D7F-A1A5-857E7A094EBE.JPG"
-              alt="Annem elinde fincanla gülümserken"
-              loading="lazy"
-            />
-            <figcaption>
-              Söz veriyorum:
-              <strong>her zaman, her yerde</strong>
-              sana kahveni ben yapacağım
-              <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true">
-                <use href="#i-coffee" />
-              </svg>
-              <span class="note">ne zaman istersen, oradayım.</span>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <!-- ============ ZARIF — special ============ -->
-      <section class="chapter">
-        <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_1084.jpg"
-              alt="Annem sokakta, çok zarif"
-              loading="lazy"
-            />
-            <figcaption>
-              Bu fotoğrafı geçen gün çektim, çünkü o an
-              <strong>“ne kadar zarif bir kadın”</strong>
-              diye düşündüm kendi kendime.
-              <span class="note">gerçekten çok zarifsin, anne.</span>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <!-- ============ FAVORITE RECENT — special ============ -->
-      <section class="chapter">
-        <div class="inner">
-          <figure class="frame">
-            <img
-              src="photos/IMG_0015.jpg"
-              alt="Annemle son zamanlardaki en sevdiğim fotoğrafımız"
-              loading="lazy"
-            />
-            <figcaption>
-              Son zamanlarda ikimizden çektiğim
-              <strong>en sevdiğim fotoğraf</strong> bu, gözlerin o kadar güzel
-              parlıyor ki
-              <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true">
-                <use href="#i-spark" />
-              </svg>
-              <span class="note">ışığını hep koru, anne.</span>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <!-- ============ CLOSING ============ -->
+      <!-- =================== CLOSING =================== -->
       <section class="closing">
+        <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
-          <svg
-            class="sprig"
-            width="80"
-            height="44"
-            viewBox="0 0 80 44"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <g fill="none" stroke="#7ea36e" stroke-width="1.4" stroke-linecap="round">
-              <path d="M2 22 C 22 12, 58 32, 78 22" />
-            </g>
-            <g fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.6">
-              <ellipse cx="16" cy="18" rx="3.8" ry="6" transform="rotate(-25 16 18)" />
-              <ellipse cx="32" cy="24" rx="3.8" ry="6" transform="rotate(15 32 24)" />
-              <ellipse cx="48" cy="20" rx="3.8" ry="6" transform="rotate(-15 48 20)" />
-              <ellipse cx="62" cy="24" rx="3.8" ry="6" transform="rotate(20 62 24)" />
-            </g>
-            <use href="#i-rose" x="34" y="12" width="14" height="14" />
-          </svg>
-
-          <h2>
-            Hayatımdaki her başarı, sen olduğun için var.
-          </h2>
+          <h2>Hayatımdaki her başarı, sen olduğun için var.</h2>
           <p>
             Akademik olsun, kişisel olsun, eriştiğim hiçbir şey sen olmadan
             mümkün olmazdı.
@@ -1209,14 +742,12 @@
             <strong>İyi ki varsın, iyi ki benim annemsin.</strong>
             <br />Seni çok seviyorum.
           </p>
-          <div class="heart-burst" aria-hidden="true">
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-rose" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-violet" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-lily" /></svg></span>
-            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+          <div class="heart-cluster" aria-hidden="true">
+            <span class="h h1"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="h h2"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="h h3"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="h h4"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="h h5"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
           </div>
           <div class="seal">oğlun</div>
         </div>
@@ -1224,56 +755,13 @@
     </main>
 
     <script>
-      // Floating petals & hearts (SVG, calm drift)
+      // One reveal observer for everything that needs to fade in.
+      // No floating particles, no infinite drift animations — those were the
+      // jank source on iPhone Safari.
       (function () {
-        var sky = document.getElementById("sky");
-        if (!sky) return;
-        var isSmall = window.matchMedia("(max-width: 480px)").matches;
-        var reduce = window.matchMedia(
-          "(prefers-reduced-motion: reduce)"
-        ).matches;
-        if (reduce) return;
-        // Heart-heavy mix
-        var pool = [
-          "#i-heart", "#i-heart", "#i-heart", "#i-heart",
-          "#i-rose",  "#i-rose",
-          "#i-lily",
-          "#i-leaf",
-          "#i-violet",
-        ];
-        // Many fewer particles — was 22/34, now 8/14. Slower, calmer.
-        var count = isSmall ? 8 : 14;
-        for (var i = 0; i < count; i++) {
-          var bit = document.createElement("div");
-          bit.className = "bit";
-          var size = 16 + Math.random() * 16;
-          // Long duration so motion is slow & gentle, not hectic
-          var dur = 28 + Math.random() * 18;
-          var delay = -Math.random() * dur;
-          var left = Math.random() * 100;
-          var which = pool[Math.floor(Math.random() * pool.length)];
-          bit.style.left = left + "vw";
-          bit.style.width = size + "px";
-          bit.style.height = size + "px";
-          bit.style.animationDuration = dur + "s";
-          bit.style.animationDelay = delay + "s";
-          bit.innerHTML =
-            '<svg viewBox="0 0 32 32" aria-hidden="true"><use href="' +
-            which +
-            '"/></svg>';
-          sky.appendChild(bit);
-        }
-      })();
-
-      // Scroll-driven reveal
-      (function () {
-        var targets = document.querySelectorAll(
-          ".frame, .verse, figcaption, .thanks"
-        );
+        var targets = document.querySelectorAll(".story, .closing");
         if (!("IntersectionObserver" in window)) {
-          targets.forEach(function (t) {
-            t.classList.add("visible");
-          });
+          targets.forEach(function (t) { t.classList.add("visible"); });
           return;
         }
         var io = new IntersectionObserver(
@@ -1285,11 +773,11 @@
               }
             });
           },
-          { threshold: 0.18, rootMargin: "0px 0px -8% 0px" }
+          // Trigger when section is ~25% into the viewport from the bottom,
+          // so reveals start a bit before the section centers.
+          { threshold: 0.18, rootMargin: "0px 0px -10% 0px" }
         );
-        targets.forEach(function (t) {
-          io.observe(t);
-        });
+        targets.forEach(function (t) { io.observe(t); });
       })();
     </script>
   </body>
