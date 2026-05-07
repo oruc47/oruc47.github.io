@@ -40,9 +40,8 @@
         box-sizing: border-box;
       }
 
-      html {
-        scroll-behavior: smooth;
-      }
+      /* removed scroll-behavior: smooth — browser-native scroll feels better
+         and avoids stutters during fast finger-flick scrolling on iPhone */
 
       html,
       body {
@@ -94,7 +93,10 @@
       /* ============ FLOATING SKY ============ */
       .sky {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100lvh; /* large viewport height — does not change with URL bar */
         pointer-events: none;
         overflow: hidden;
         z-index: 0;
@@ -105,32 +107,30 @@
         top: -8vh;
         opacity: 0;
         animation: drift linear infinite;
-        will-change: transform, opacity;
-        filter: drop-shadow(0 4px 8px rgba(199, 94, 126, 0.18));
       }
 
       .sky .bit svg {
         display: block;
         width: 100%;
         height: 100%;
+        filter: drop-shadow(0 3px 6px rgba(199, 94, 126, 0.14));
       }
 
+      /* Calm straight-down drift, no rotation (rotation was the main
+         GPU-thrash cause on iPhone). vh is stable on modern iOS Safari. */
       @keyframes drift {
         0% {
-          transform: translate3d(0, -10vh, 0) rotate(0deg);
+          transform: translate3d(0, 0, 0);
           opacity: 0;
         }
-        8% {
-          opacity: 0.95;
+        12% {
+          opacity: 0.85;
         }
-        50% {
-          transform: translate3d(40px, 55vh, 0) rotate(180deg);
-        }
-        92% {
+        88% {
           opacity: 0.7;
         }
         100% {
-          transform: translate3d(-20px, 115vh, 0) rotate(360deg);
+          transform: translate3d(0, 120vh, 0);
           opacity: 0;
         }
       }
@@ -250,31 +250,31 @@
         }
       }
 
-      /* gentle sway for the bouquet */
+      /* gentle sway for the bouquet — slower & smaller for less GPU work */
       .bouquet .sway-l {
         transform-origin: 200px 220px;
-        animation: swayL 6s ease-in-out infinite;
+        animation: swayL 9s ease-in-out infinite;
       }
       .bouquet .sway-r {
         transform-origin: 200px 220px;
-        animation: swayR 6s ease-in-out infinite;
+        animation: swayR 9s ease-in-out infinite;
       }
       @keyframes swayL {
         0%,
         100% {
-          transform: rotate(-1.5deg);
+          transform: rotate(-1deg);
         }
         50% {
-          transform: rotate(1.5deg);
+          transform: rotate(1deg);
         }
       }
       @keyframes swayR {
         0%,
         100% {
-          transform: rotate(1.5deg);
+          transform: rotate(1deg);
         }
         50% {
-          transform: rotate(-1.5deg);
+          transform: rotate(-1deg);
         }
       }
 
@@ -288,15 +288,15 @@
         width: min(440px, 100%);
         margin: 0 auto;
         opacity: 0;
-        transform: translateY(36px) scale(0.97);
+        transform: translateY(28px);
         transition:
-          opacity 1.1s ease,
-          transform 1.1s ease;
+          opacity 0.6s ease-out,
+          transform 0.6s ease-out;
       }
 
       .frame.visible {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
       }
 
       .frame::before {
@@ -340,10 +340,10 @@
       .verse {
         margin-top: 26px;
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(16px);
         transition:
-          opacity 1.1s ease 0.18s,
-          transform 1.1s ease 0.18s;
+          opacity 0.55s ease-out 0.12s,
+          transform 0.55s ease-out 0.12s;
       }
 
       .verse.visible,
@@ -407,15 +407,15 @@
         height: 86px;
         margin: 0 auto;
         opacity: 0;
-        transform: translateY(14px) scale(0.92);
+        transform: translateY(10px);
         transition:
-          opacity 0.9s ease,
-          transform 0.9s ease;
+          opacity 0.5s ease-out,
+          transform 0.5s ease-out;
       }
 
       .thanks.visible .ornament {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
       }
 
       .thanks .label {
@@ -427,7 +427,7 @@
         letter-spacing: 0.32em;
         text-transform: uppercase;
         opacity: 0;
-        transition: opacity 0.9s ease 0.1s;
+        transition: opacity 0.5s ease-out 0.08s;
       }
 
       .thanks.visible .label {
@@ -442,10 +442,10 @@
         color: var(--ink);
         letter-spacing: -0.005em;
         opacity: 0;
-        transform: translateY(18px);
+        transform: translateY(14px);
         transition:
-          opacity 1s ease 0.25s,
-          transform 1s ease 0.25s;
+          opacity 0.55s ease-out 0.18s,
+          transform 0.55s ease-out 0.18s;
       }
 
       .thanks.visible .line {
@@ -1224,26 +1224,31 @@
     </main>
 
     <script>
-      // Floating petals & hearts (SVG, more hearts)
+      // Floating petals & hearts (SVG, calm drift)
       (function () {
         var sky = document.getElementById("sky");
         if (!sky) return;
         var isSmall = window.matchMedia("(max-width: 480px)").matches;
-        // Heart-heavy mix per user request
+        var reduce = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        if (reduce) return;
+        // Heart-heavy mix
         var pool = [
-          "#i-heart", "#i-heart", "#i-heart", "#i-heart", "#i-heart",
+          "#i-heart", "#i-heart", "#i-heart", "#i-heart",
           "#i-rose",  "#i-rose",
           "#i-lily",
           "#i-leaf",
           "#i-violet",
-          "#i-spark"
         ];
-        var count = isSmall ? 22 : 34;
+        // Many fewer particles — was 22/34, now 8/14. Slower, calmer.
+        var count = isSmall ? 8 : 14;
         for (var i = 0; i < count; i++) {
           var bit = document.createElement("div");
           bit.className = "bit";
-          var size = 14 + Math.random() * 22;
-          var dur = 14 + Math.random() * 14;
+          var size = 16 + Math.random() * 16;
+          // Long duration so motion is slow & gentle, not hectic
+          var dur = 28 + Math.random() * 18;
           var delay = -Math.random() * dur;
           var left = Math.random() * 100;
           var which = pool[Math.floor(Math.random() * pool.length)];
