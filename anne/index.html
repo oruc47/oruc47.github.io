@@ -7,14 +7,19 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="robots" content="noindex, nofollow, noarchive" />
-    <meta name="theme-color" content="#f5e9e0" />
-    <title>Canım Annem · 7 Mayıs</title>
-    <link rel="preload" as="image" href="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG" />
+    <meta name="theme-color" content="#fdf6ee" />
+    <title>Canım Annem</title>
+    <link
+      rel="preload"
+      as="image"
+      href="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG"
+    />
     <style>
       :root {
         --rose: #e88aa3;
         --rose-deep: #c75e7e;
-        --blush: #f8d6d8;
+        --rose-light: #f8d6d8;
+        --blush: #ffe7ee;
         --cream: #fdf6ee;
         --cream-2: #f7ead7;
         --sage: #9bbf95;
@@ -75,10 +80,18 @@
       img {
         max-width: 100%;
         display: block;
-        image-orientation: from-image;
+        image-orientation: none;
       }
 
-      /* Floating petals & hearts background */
+      /* ============ SVG SPRITES (hidden) ============ */
+      .svg-defs {
+        position: absolute;
+        width: 0;
+        height: 0;
+        overflow: hidden;
+      }
+
+      /* ============ FLOATING SKY ============ */
       .sky {
         position: fixed;
         inset: 0;
@@ -87,14 +100,19 @@
         z-index: 0;
       }
 
-      .sky span {
+      .sky .bit {
         position: absolute;
         top: -8vh;
-        font-size: 18px;
         opacity: 0;
         animation: drift linear infinite;
         will-change: transform, opacity;
         filter: drop-shadow(0 4px 8px rgba(199, 94, 126, 0.18));
+      }
+
+      .sky .bit svg {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
 
       @keyframes drift {
@@ -117,7 +135,7 @@
         }
       }
 
-      /* Page sections */
+      /* ============ PAGE & SECTIONS ============ */
       main {
         position: relative;
         z-index: 1;
@@ -136,7 +154,7 @@
         text-align: center;
       }
 
-      /* Cover */
+      /* ============ COVER ============ */
       .cover .crest {
         font-family: var(--serif);
         font-style: italic;
@@ -144,7 +162,7 @@
         letter-spacing: 0.4em;
         text-transform: uppercase;
         font-size: 12px;
-        margin-bottom: 18px;
+        margin-bottom: 12px;
       }
 
       .cover h1 {
@@ -152,7 +170,7 @@
         font-weight: 500;
         font-size: clamp(54px, 14vw, 92px);
         line-height: 0.95;
-        margin: 0 0 18px;
+        margin: 0 0 14px;
         color: var(--ink);
         letter-spacing: -0.01em;
       }
@@ -166,7 +184,7 @@
         font-family: var(--hand);
         font-size: 30px;
         color: var(--sage-deep);
-        margin-top: 8px;
+        margin-top: 6px;
       }
 
       .cover .lede {
@@ -212,26 +230,55 @@
         }
       }
 
-      /* Floral wreath SVG accent */
-      .wreath {
-        width: 220px;
-        margin: 0 auto 14px;
+      /* The big floral header on the cover */
+      .bouquet {
+        width: min(320px, 80vw);
+        margin: 0 auto 8px;
         opacity: 0;
-        animation: wreathIn 1.4s 0.2s ease-out forwards;
+        animation: bouquetIn 1.6s 0.15s ease-out forwards;
+        filter: drop-shadow(0 14px 28px rgba(199, 94, 126, 0.18));
       }
 
-      @keyframes wreathIn {
+      @keyframes bouquetIn {
         from {
           opacity: 0;
-          transform: scale(0.92);
+          transform: translateY(10px) scale(0.95);
         }
         to {
           opacity: 1;
-          transform: scale(1);
+          transform: translateY(0) scale(1);
         }
       }
 
-      /* Photo + text sections */
+      /* gentle sway for the bouquet */
+      .bouquet .sway-l {
+        transform-origin: 200px 220px;
+        animation: swayL 6s ease-in-out infinite;
+      }
+      .bouquet .sway-r {
+        transform-origin: 200px 220px;
+        animation: swayR 6s ease-in-out infinite;
+      }
+      @keyframes swayL {
+        0%,
+        100% {
+          transform: rotate(-1.5deg);
+        }
+        50% {
+          transform: rotate(1.5deg);
+        }
+      }
+      @keyframes swayR {
+        0%,
+        100% {
+          transform: rotate(1.5deg);
+        }
+        50% {
+          transform: rotate(-1.5deg);
+        }
+      }
+
+      /* ============ CHAPTER (photo + text) ============ */
       .chapter {
         gap: 22px;
       }
@@ -270,24 +317,23 @@
         background: var(--cream);
       }
 
-      .frame .leaf-deco {
+      .frame .corner {
         position: absolute;
         width: 84px;
         height: 84px;
-        opacity: 0.85;
+        opacity: 0.95;
         pointer-events: none;
       }
 
-      .frame .leaf-deco.tl {
-        top: -34px;
-        left: -28px;
-        transform: rotate(-25deg);
+      .frame .corner.tl {
+        top: -42px;
+        left: -34px;
       }
 
-      .frame .leaf-deco.br {
-        bottom: -32px;
-        right: -24px;
-        transform: rotate(155deg);
+      .frame .corner.br {
+        bottom: -38px;
+        right: -28px;
+        transform: rotate(180deg);
       }
 
       figcaption,
@@ -323,7 +369,7 @@
         font-family: var(--serif);
         font-style: italic;
         font-size: clamp(20px, 5vw, 26px);
-        line-height: 1.4;
+        line-height: 1.45;
         color: var(--muted);
       }
 
@@ -343,79 +389,81 @@
         line-height: 1.3;
       }
 
-      /* Bullet card */
-      .bullets {
-        margin-top: 22px;
-        text-align: left;
-        list-style: none;
-        padding: 0;
+      .inline-icon {
+        display: inline-block;
+        vertical-align: -0.18em;
+        width: 1em;
+        height: 1em;
+        margin: 0 0.08em;
       }
 
-      .bullets li {
-        font-family: var(--serif);
-        font-size: 19px;
-        line-height: 1.55;
-        padding: 8px 0 8px 30px;
-        position: relative;
-        color: var(--ink);
+      /* ============ THANK-YOU CARDS ============ */
+      .thanks {
+        gap: 18px;
+      }
+
+      .thanks .ornament {
+        width: 86px;
+        height: 86px;
+        margin: 0 auto;
         opacity: 0;
-        transform: translateX(-12px);
+        transform: translateY(14px) scale(0.92);
         transition:
-          opacity 0.8s ease,
-          transform 0.8s ease;
+          opacity 0.9s ease,
+          transform 0.9s ease;
       }
 
-      .bullets.visible li {
+      .thanks.visible .ornament {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateY(0) scale(1);
       }
 
-      .bullets.visible li:nth-child(1) {
-        transition-delay: 0.05s;
-      }
-      .bullets.visible li:nth-child(2) {
-        transition-delay: 0.18s;
-      }
-      .bullets.visible li:nth-child(3) {
-        transition-delay: 0.31s;
-      }
-      .bullets.visible li:nth-child(4) {
-        transition-delay: 0.44s;
-      }
-      .bullets.visible li:nth-child(5) {
-        transition-delay: 0.57s;
-      }
-      .bullets.visible li:nth-child(6) {
-        transition-delay: 0.70s;
-      }
-      .bullets.visible li:nth-child(7) {
-        transition-delay: 0.83s;
-      }
-
-      .bullets li::before {
-        content: "";
-        position: absolute;
-        left: 4px;
-        top: 16px;
-        width: 14px;
-        height: 14px;
-        background: radial-gradient(
-            circle at 30% 30%,
-            #ffd2dc,
-            var(--rose) 70%
-          );
-        border-radius: 50%;
-        box-shadow: 0 4px 10px -4px rgba(199, 94, 126, 0.5);
-      }
-
-      /* Closing */
-      .closing .seal {
-        font-family: var(--hand);
+      .thanks .label {
+        margin-top: 10px;
+        font-family: var(--serif);
+        font-style: italic;
         color: var(--rose-deep);
-        font-size: 34px;
-        margin-top: 28px;
+        font-size: 14px;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        opacity: 0;
+        transition: opacity 0.9s ease 0.1s;
       }
 
+      .thanks.visible .label {
+        opacity: 1;
+      }
+
+      .thanks .line {
+        margin-top: 22px;
+        font-family: var(--serif);
+        font-size: clamp(28px, 7vw, 38px);
+        line-height: 1.3;
+        color: var(--ink);
+        letter-spacing: -0.005em;
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 1s ease 0.25s,
+          transform 1s ease 0.25s;
+      }
+
+      .thanks.visible .line {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .thanks .line span {
+        font-style: italic;
+        color: var(--rose-deep);
+      }
+
+      /* ============ PHOTO BREAK (no text) ============ */
+      .interlude .frame {
+        max-width: 380px;
+      }
+
+      /* ============ CLOSING ============ */
       .closing h2 {
         font-family: var(--serif);
         font-style: italic;
@@ -431,47 +479,70 @@
         color: var(--ink);
       }
 
-      .heart-burst {
-        position: relative;
-        height: 80px;
-        margin: 24px auto 0;
-        width: 200px;
+      .closing .seal {
+        font-family: var(--hand);
+        color: var(--rose-deep);
+        font-size: 34px;
+        margin-top: 28px;
       }
 
-      .heart-burst span {
+      .heart-burst {
+        position: relative;
+        height: 110px;
+        margin: 18px auto 0;
+        width: 240px;
+      }
+
+      .heart-burst .hb {
         position: absolute;
         top: 50%;
         left: 50%;
-        font-size: 22px;
+        width: 26px;
+        height: 26px;
         opacity: 0;
         transform: translate(-50%, -50%);
-        animation: hb 3.8s ease-out infinite;
+        animation: hb 4s ease-out infinite;
       }
 
-      .heart-burst span:nth-child(1) {
+      .heart-burst .hb svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .heart-burst .hb:nth-child(1) {
         animation-delay: 0s;
-        --tx: -70px;
-        --ty: -22px;
+        --tx: -82px;
+        --ty: -28px;
       }
-      .heart-burst span:nth-child(2) {
-        animation-delay: 0.5s;
+      .heart-burst .hb:nth-child(2) {
+        animation-delay: 0.4s;
+        --tx: 70px;
+        --ty: -34px;
+      }
+      .heart-burst .hb:nth-child(3) {
+        animation-delay: 0.8s;
+        --tx: -50px;
+        --ty: 36px;
+      }
+      .heart-burst .hb:nth-child(4) {
+        animation-delay: 1.2s;
         --tx: 60px;
-        --ty: -30px;
+        --ty: 32px;
       }
-      .heart-burst span:nth-child(3) {
-        animation-delay: 1s;
-        --tx: -40px;
-        --ty: 30px;
+      .heart-burst .hb:nth-child(5) {
+        animation-delay: 1.6s;
+        --tx: 0px;
+        --ty: -50px;
       }
-      .heart-burst span:nth-child(4) {
-        animation-delay: 1.5s;
-        --tx: 50px;
-        --ty: 28px;
-      }
-      .heart-burst span:nth-child(5) {
+      .heart-burst .hb:nth-child(6) {
         animation-delay: 2s;
-        --tx: 0;
-        --ty: -40px;
+        --tx: -22px;
+        --ty: 50px;
+      }
+      .heart-burst .hb:nth-child(7) {
+        animation-delay: 2.4s;
+        --tx: 30px;
+        --ty: -10px;
       }
 
       @keyframes hb {
@@ -483,7 +554,7 @@
           opacity: 1;
         }
         80% {
-          opacity: 0.9;
+          opacity: 0.95;
           transform: translate(
               calc(-50% + var(--tx)),
               calc(-50% + var(--ty))
@@ -494,25 +565,24 @@
           opacity: 0;
           transform: translate(
               calc(-50% + var(--tx)),
-              calc(-50% + var(--ty) - 12px)
+              calc(-50% + var(--ty) - 14px)
             )
-            scale(1.2);
+            scale(1.25);
         }
       }
 
-      /* divider sprigs */
       .sprig {
         display: block;
-        margin: 0 auto;
-        opacity: 0.65;
+        margin: 0 auto 12px;
+        opacity: 0.8;
       }
 
       @media (max-width: 380px) {
         .verse {
           font-size: 22px;
         }
-        .bullets li {
-          font-size: 17.5px;
+        .thanks .line {
+          font-size: 26px;
         }
       }
 
@@ -524,7 +594,10 @@
         .frame,
         .verse,
         figcaption,
-        .bullets li {
+        .thanks,
+        .thanks .ornament,
+        .thanks .label,
+        .thanks .line {
           opacity: 1;
           transform: none;
         }
@@ -532,127 +605,332 @@
     </style>
   </head>
   <body>
+    <!-- ===================== SVG SPRITES ===================== -->
+    <svg
+      class="svg-defs"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="rosePetal" cx="50%" cy="40%" r="65%">
+          <stop offset="0%" stop-color="#fff5f8" />
+          <stop offset="55%" stop-color="#f3a8bd" />
+          <stop offset="100%" stop-color="#c75e7e" />
+        </radialGradient>
+        <radialGradient id="roseCenter" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#fff3a8" />
+          <stop offset="100%" stop-color="#c9a26a" />
+        </radialGradient>
+        <radialGradient id="heartGrad" cx="50%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#ffd6e1" />
+          <stop offset="55%" stop-color="#e88aa3" />
+          <stop offset="100%" stop-color="#c75e7e" />
+        </radialGradient>
+        <radialGradient id="leafGrad" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#c4dcb6" />
+          <stop offset="100%" stop-color="#5e8a64" />
+        </radialGradient>
+        <radialGradient id="lilyPetal" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#ffffff" />
+          <stop offset="100%" stop-color="#f7e8d3" />
+        </radialGradient>
+        <radialGradient id="violetPetal" cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stop-color="#f0e2ff" />
+          <stop offset="100%" stop-color="#a98bd9" />
+        </radialGradient>
+
+        <!-- HEART -->
+        <symbol id="i-heart" viewBox="0 0 32 32">
+          <path
+            d="M16 28 C 6 21, 1 14, 4 8 C 7 2, 13 2, 16 8 C 19 2, 25 2, 28 8 C 31 14, 26 21, 16 28 Z"
+            fill="url(#heartGrad)"
+            stroke="#c75e7e"
+            stroke-width="0.6"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M9 8 C 8 11, 10 14, 12 16"
+            fill="none"
+            stroke="#fff"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            opacity="0.55"
+          />
+        </symbol>
+
+        <!-- SMALL ROSE FLOWER -->
+        <symbol id="i-rose" viewBox="0 0 32 32">
+          <g transform="translate(16 16)">
+            <ellipse
+              cx="0"
+              cy="-8"
+              rx="5"
+              ry="8"
+              fill="url(#rosePetal)"
+              stroke="#c75e7e"
+              stroke-width="0.4"
+            />
+            <ellipse
+              cx="0"
+              cy="-8"
+              rx="5"
+              ry="8"
+              fill="url(#rosePetal)"
+              stroke="#c75e7e"
+              stroke-width="0.4"
+              transform="rotate(72)"
+            />
+            <ellipse
+              cx="0"
+              cy="-8"
+              rx="5"
+              ry="8"
+              fill="url(#rosePetal)"
+              stroke="#c75e7e"
+              stroke-width="0.4"
+              transform="rotate(144)"
+            />
+            <ellipse
+              cx="0"
+              cy="-8"
+              rx="5"
+              ry="8"
+              fill="url(#rosePetal)"
+              stroke="#c75e7e"
+              stroke-width="0.4"
+              transform="rotate(216)"
+            />
+            <ellipse
+              cx="0"
+              cy="-8"
+              rx="5"
+              ry="8"
+              fill="url(#rosePetal)"
+              stroke="#c75e7e"
+              stroke-width="0.4"
+              transform="rotate(288)"
+            />
+            <circle r="3" fill="url(#roseCenter)" />
+          </g>
+        </symbol>
+
+        <!-- LILY OF THE VALLEY (mom's May birth flower) -->
+        <symbol id="i-lily" viewBox="0 0 32 32">
+          <g>
+            <path
+              d="M16 4 L16 28"
+              stroke="#5e8a64"
+              stroke-width="0.8"
+              fill="none"
+              stroke-linecap="round"
+            />
+            <ellipse cx="11" cy="9" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+            <ellipse cx="20" cy="13" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+            <ellipse cx="12" cy="18" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+            <ellipse cx="20" cy="23" rx="3" ry="4" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+          </g>
+        </symbol>
+
+        <!-- LEAF -->
+        <symbol id="i-leaf" viewBox="0 0 32 32">
+          <path
+            d="M16 4 C 7 12, 7 22, 16 28 C 25 22, 25 12, 16 4 Z"
+            fill="url(#leafGrad)"
+            stroke="#5e8a64"
+            stroke-width="0.6"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M16 6 L16 28"
+            stroke="#5e8a64"
+            stroke-width="0.8"
+            fill="none"
+          />
+          <path
+            d="M16 12 L11 16 M16 12 L21 16 M16 18 L11 22 M16 18 L21 22"
+            stroke="#5e8a64"
+            stroke-width="0.5"
+            fill="none"
+            opacity="0.7"
+          />
+        </symbol>
+
+        <!-- VIOLET-LIKE FLOWER -->
+        <symbol id="i-violet" viewBox="0 0 32 32">
+          <g transform="translate(16 16)">
+            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" />
+            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(72)" />
+            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(144)" />
+            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(216)" />
+            <ellipse cx="0" cy="-7" rx="4" ry="6" fill="url(#violetPetal)" transform="rotate(288)" />
+            <circle r="2.5" fill="#f7e070" />
+          </g>
+        </symbol>
+
+        <!-- SPARKLE / 4-pt star -->
+        <symbol id="i-spark" viewBox="0 0 32 32">
+          <path
+            d="M16 2 L18 14 L30 16 L18 18 L16 30 L14 18 L2 16 L14 14 Z"
+            fill="#f7d77a"
+            stroke="#c9a26a"
+            stroke-width="0.4"
+          />
+        </symbol>
+
+        <!-- COFFEE CUP -->
+        <symbol id="i-coffee" viewBox="0 0 32 32">
+          <g fill="none" stroke="#7a4a32" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 11 L5 22 C 5 25, 8 27, 12 27 L 18 27 C 22 27, 25 25, 25 22 L 25 11 Z" fill="#fff7ee" />
+            <path d="M25 14 C 29 14, 30 16, 30 18 C 30 20, 29 22, 25 22" />
+            <path d="M9 4 C 8 6, 10 7, 9 9" />
+            <path d="M14 4 C 13 6, 15 7, 14 9" />
+            <path d="M19 4 C 18 6, 20 7, 19 9" />
+          </g>
+        </symbol>
+      </defs>
+    </svg>
+
+    <!-- ===================== FLOATING SKY ===================== -->
     <div class="sky" id="sky" aria-hidden="true"></div>
 
     <main>
       <!-- ============ COVER ============ -->
       <section class="cover">
         <div class="inner">
+          <!-- Hand-drawn floral bouquet (proper, layered, illustrated) -->
           <svg
-            class="wreath"
-            viewBox="0 0 220 220"
+            class="bouquet"
+            viewBox="0 0 400 320"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
-            <defs>
-              <radialGradient id="petalGrad" cx="50%" cy="40%" r="60%">
-                <stop offset="0%" stop-color="#fff0f3" />
-                <stop offset="55%" stop-color="#f3a8bd" />
-                <stop offset="100%" stop-color="#c75e7e" />
-              </radialGradient>
-              <radialGradient id="centerGrad" cx="50%" cy="50%" r="60%">
-                <stop offset="0%" stop-color="#fff3a8" />
-                <stop offset="100%" stop-color="#c9a26a" />
-              </radialGradient>
-            </defs>
-            <!-- ring of leaves -->
-            <g
-              fill="none"
-              stroke="#7ea36e"
-              stroke-width="1.4"
-              stroke-linecap="round"
-              opacity="0.8"
-            >
-              <circle cx="110" cy="110" r="78" stroke-dasharray="3 6" />
-            </g>
-            <g fill="#8eb583">
-              <ellipse cx="110" cy="32" rx="6" ry="14" />
-              <ellipse
-                cx="180"
-                cy="60"
-                rx="6"
-                ry="14"
-                transform="rotate(60 180 60)"
+            <!-- soft halo -->
+            <ellipse cx="200" cy="170" rx="160" ry="120" fill="#fff" opacity="0.35" />
+
+            <!-- LEFT SWAYING SPRAY -->
+            <g class="sway-l">
+              <!-- stem 1 -->
+              <path
+                d="M200 240 C 150 200, 110 150, 80 90"
+                fill="none"
+                stroke="#5e8a64"
+                stroke-width="2.2"
+                stroke-linecap="round"
               />
-              <ellipse
-                cx="200"
-                cy="138"
-                rx="6"
-                ry="14"
-                transform="rotate(120 200 138)"
-              />
-              <ellipse
-                cx="138"
-                cy="190"
-                rx="6"
-                ry="14"
-                transform="rotate(180 138 190)"
-              />
-              <ellipse
-                cx="62"
-                cy="188"
-                rx="6"
-                ry="14"
-                transform="rotate(225 62 188)"
-              />
-              <ellipse
-                cx="20"
-                cy="118"
-                rx="6"
-                ry="14"
-                transform="rotate(280 20 118)"
-              />
-              <ellipse
-                cx="40"
-                cy="50"
-                rx="6"
-                ry="14"
-                transform="rotate(330 40 50)"
-              />
-            </g>
-            <!-- center bloom -->
-            <g transform="translate(110 110)">
-              <g>
-                <ellipse
-                  cx="0"
-                  cy="-22"
-                  rx="13"
-                  ry="22"
-                  fill="url(#petalGrad)"
-                />
-                <ellipse
-                  cx="22"
-                  cy="0"
-                  rx="13"
-                  ry="22"
-                  fill="url(#petalGrad)"
-                  transform="rotate(72 0 0) translate(0 -22)"
-                />
-                <ellipse
-                  cx="0"
-                  cy="-22"
-                  rx="13"
-                  ry="22"
-                  fill="url(#petalGrad)"
-                  transform="rotate(144)"
-                />
-                <ellipse
-                  cx="0"
-                  cy="-22"
-                  rx="13"
-                  ry="22"
-                  fill="url(#petalGrad)"
-                  transform="rotate(216)"
-                />
-                <ellipse
-                  cx="0"
-                  cy="-22"
-                  rx="13"
-                  ry="22"
-                  fill="url(#petalGrad)"
-                  transform="rotate(288)"
-                />
-                <circle r="9" fill="url(#centerGrad)" />
+              <!-- leaves on stem 1 -->
+              <ellipse cx="120" cy="170" rx="9" ry="20" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-50 120 170)" />
+              <ellipse cx="100" cy="135" rx="8" ry="18" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-65 100 135)" />
+              <ellipse cx="88" cy="105" rx="7" ry="15" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(-40 88 105)" />
+
+              <!-- flower head 1 (rose) -->
+              <g transform="translate(78 80)">
+                <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" />
+                <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(72)" />
+                <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(144)" />
+                <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(216)" />
+                <ellipse cx="0" cy="-18" rx="10" ry="18" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(288)" />
+                <circle r="6" fill="url(#roseCenter)" />
+                <circle r="2" fill="#7a5226" opacity="0.7" />
               </g>
+
+              <!-- small bud -->
+              <g transform="translate(140 195)">
+                <path
+                  d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z"
+                  fill="url(#rosePetal)"
+                  stroke="#c75e7e"
+                  stroke-width="0.5"
+                />
+              </g>
+            </g>
+
+            <!-- RIGHT SWAYING SPRAY -->
+            <g class="sway-r">
+              <!-- stem 2 -->
+              <path
+                d="M200 240 C 250 200, 290 150, 320 90"
+                fill="none"
+                stroke="#5e8a64"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              />
+              <!-- leaves on stem 2 -->
+              <ellipse cx="280" cy="170" rx="9" ry="20" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(50 280 170)" />
+              <ellipse cx="300" cy="135" rx="8" ry="18" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(65 300 135)" />
+              <ellipse cx="312" cy="105" rx="7" ry="15" fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.8" transform="rotate(40 312 105)" />
+
+              <!-- flower head 2 (rose) -->
+              <g transform="translate(322 80)">
+                <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(20)" />
+                <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(92)" />
+                <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(164)" />
+                <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(236)" />
+                <ellipse cx="0" cy="-16" rx="9" ry="16" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" transform="rotate(308)" />
+                <circle r="5.5" fill="url(#roseCenter)" />
+                <circle r="2" fill="#7a5226" opacity="0.7" />
+              </g>
+
+              <!-- small bud -->
+              <g transform="translate(260 195)">
+                <path
+                  d="M0 8 C -6 0, -6 -8, 0 -10 C 6 -8, 6 0, 0 8 Z"
+                  fill="url(#rosePetal)"
+                  stroke="#c75e7e"
+                  stroke-width="0.5"
+                />
+              </g>
+            </g>
+
+            <!-- CENTER (focal) ROSE — bigger, in front -->
+            <g transform="translate(200 130)">
+              <!-- back petals -->
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" />
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(60)" />
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(120)" />
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(180)" />
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(240)" />
+              <ellipse cx="0" cy="-26" rx="15" ry="26" fill="url(#rosePetal)" stroke="#c75e7e" stroke-width="0.6" opacity="0.95" transform="rotate(300)" />
+              <!-- inner petals -->
+              <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(30)" />
+              <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(150)" />
+              <ellipse cx="0" cy="-14" rx="8" ry="14" fill="#fff5f8" stroke="#c75e7e" stroke-width="0.5" transform="rotate(270)" />
+              <!-- center -->
+              <circle r="9" fill="url(#roseCenter)" stroke="#9a7240" stroke-width="0.5" />
+              <circle r="3" fill="#7a5226" opacity="0.8" />
+            </g>
+
+            <!-- accent lily-of-the-valley sprig in front (mom's May birth flower) -->
+            <g transform="translate(170 200) rotate(-12)">
+              <path d="M0 0 L 0 60" stroke="#5e8a64" stroke-width="1.4" fill="none" />
+              <ellipse cx="-6" cy="10" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+              <ellipse cx="6" cy="22" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+              <ellipse cx="-5" cy="36" rx="4" ry="5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+              <ellipse cx="6" cy="50" rx="3.5" ry="4.5" fill="url(#lilyPetal)" stroke="#c9a26a" stroke-width="0.4" />
+            </g>
+
+            <!-- ribbon tying the bouquet -->
+            <g transform="translate(200 240)">
+              <path
+                d="M-22 0 C -10 -6, 10 -6, 22 0 C 10 6, -10 6, -22 0 Z"
+                fill="#e88aa3"
+                stroke="#c75e7e"
+                stroke-width="0.6"
+              />
+              <path
+                d="M-22 0 C -32 8, -36 16, -34 22"
+                fill="none"
+                stroke="#c75e7e"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <path
+                d="M22 0 C 32 8, 36 16, 34 22"
+                fill="none"
+                stroke="#c75e7e"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+              <ellipse cx="0" cy="0" rx="5" ry="6" fill="#c75e7e" />
             </g>
           </svg>
 
@@ -670,23 +948,10 @@
       <section class="chapter">
         <div class="inner">
           <figure class="frame">
-            <svg
-              class="leaf-deco tl"
-              viewBox="0 0 100 100"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g
-                fill="#9bbf95"
-                stroke="#5e8a64"
-                stroke-width="1"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M50 10 C30 30, 30 60, 50 90 C70 60, 70 30, 50 10 Z"
-                  opacity="0.8"
-                />
-                <path d="M50 10 L50 90" stroke="#5e8a64" stroke-width="1.2" />
-              </g>
+            <svg class="corner tl" viewBox="0 0 84 84" aria-hidden="true">
+              <use href="#i-rose" x="0" y="0" width="40" height="40" />
+              <use href="#i-leaf" x="22" y="36" width="32" height="32" />
+              <use href="#i-heart" x="42" y="6" width="22" height="22" />
             </svg>
             <img
               src="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG"
@@ -696,12 +961,12 @@
           </figure>
           <p class="verse">
             Allah sana mutluluk, huzur ve neşe dolu nice yıllar daha
-            <span class="accent">nasip etsin</span>.
+            <span class="accent">nasip etsin.</span>
           </p>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 2 — the thank-yous ============ -->
+      <!-- ============ CHAPTER 2 — intro to thank-yous ============ -->
       <section class="chapter">
         <div class="inner">
           <figure class="frame">
@@ -712,22 +977,39 @@
             />
           </figure>
           <p class="verse">
-            Sana <span class="accent">teşekkür ederim</span>…
+            Sana <span class="accent">teşekkür ederim…</span>
           </p>
-          <ul class="bullets">
-            <li>bana her zaman destek olduğun için,</li>
-            <li>beni koşulsuz sevdiğin için,</li>
-            <li>en küçük ayrıntıları bile düşündüğün için,</li>
-            <li>bu kadar harika bir anne olduğun için,</li>
-            <li>bizim için yaptığın onca fedakârlık için,</li>
-            <li>her zaman içimi dökebildiğim biri olduğun için,</li>
-            <li>sırdaşım olduğun için.</li>
-          </ul>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 3 — mountains / support ============ -->
-      <section class="chapter">
+      <!-- ============ THANK-YOU 1 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-rose" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            bana her zaman <span>destek</span> olduğun için,
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ THANK-YOU 2 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-heart" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            beni <span>koşulsuz sevdiğin</span> için,
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ INTERLUDE — mountains ============ -->
+      <section class="chapter interlude">
         <div class="inner">
           <figure class="frame">
             <img
@@ -736,15 +1018,76 @@
               loading="lazy"
             />
           </figure>
-          <p class="verse">
-            Yanımda olduğun her an,
-            <span class="accent">en sağlam dağım</span> sensin.
+        </div>
+      </section>
+
+      <!-- ============ THANK-YOU 3 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-lily" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            en küçük <span>ayrıntıları</span> bile düşündüğün için,
           </p>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 4 — temple / unconditional love ============ -->
-      <section class="chapter">
+      <!-- ============ THANK-YOU 4 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-rose" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            bu kadar <span>harika bir anne</span> olduğun için,
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ INTERLUDE — bougainvillea ============ -->
+      <section class="chapter interlude">
+        <div class="inner">
+          <figure class="frame">
+            <img
+              src="photos/IMG_8457.JPG"
+              alt="Annem ve ben begonvil çiçeklerinin önünde"
+              loading="lazy"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============ THANK-YOU 5 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-violet" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            bizim için yaptığın onca <span>fedakârlık</span> için,
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ THANK-YOU 6 ============ -->
+      <section class="thanks">
+        <div class="inner">
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-heart" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            her zaman <span>içimi dökebildiğim</span> biri olduğun için,
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ INTERLUDE — temple ============ -->
+      <section class="chapter interlude">
         <div class="inner">
           <figure class="frame">
             <img
@@ -753,48 +1096,23 @@
               loading="lazy"
             />
           </figure>
-          <p class="verse">
-            Dünyanın neresinde olursak olalım, sevgin
-            <span class="accent">hep yanımda</span>.
-          </p>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 5 — bougainvillea kiss ============ -->
-      <section class="chapter">
+      <!-- ============ THANK-YOU 7 ============ -->
+      <section class="thanks">
         <div class="inner">
-          <figure class="frame">
-            <svg
-              class="leaf-deco br"
-              viewBox="0 0 100 100"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <g fill="#e88aa3" opacity="0.85">
-                <circle cx="30" cy="40" r="8" />
-                <circle cx="55" cy="30" r="7" />
-                <circle cx="70" cy="55" r="9" />
-                <circle cx="45" cy="62" r="7" />
-                <circle cx="60" cy="75" r="6" />
-              </g>
-              <g fill="#7ea36e">
-                <ellipse cx="20" cy="68" rx="5" ry="10" transform="rotate(-30 20 68)" />
-                <ellipse cx="82" cy="38" rx="5" ry="10" transform="rotate(40 82 38)" />
-              </g>
-            </svg>
-            <img
-              src="photos/IMG_8457.JPG"
-              alt="Annem ve ben begonvil çiçeklerinin önünde"
-              loading="lazy"
-            />
-          </figure>
-          <p class="verse">
-            Çiçekler senin için açıyor — tıpkı
-            <span class="accent">benim kalbim gibi</span>.
+          <svg class="ornament" viewBox="0 0 32 32" aria-hidden="true">
+            <use href="#i-rose" />
+          </svg>
+          <div class="label">teşekkür ederim</div>
+          <p class="line">
+            <span>sırdaşım</span> olduğun için.
           </p>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 6 — COFFEE ============ -->
+      <!-- ============ COFFEE — special ============ -->
       <section class="chapter">
         <div class="inner">
           <figure class="frame">
@@ -804,15 +1122,19 @@
               loading="lazy"
             />
             <figcaption>
-              Söz veriyorum: <strong>her zaman, her yerde</strong> sana kahveni
-              ben yapacağım. ☕
-              <span class="note">— ne zaman istersen, oradayım.</span>
+              Söz veriyorum:
+              <strong>her zaman, her yerde</strong>
+              sana kahveni ben yapacağım
+              <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true">
+                <use href="#i-coffee" />
+              </svg>
+              <span class="note">ne zaman istersen, oradayım.</span>
             </figcaption>
           </figure>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 7 — ZARIF ============ -->
+      <!-- ============ ZARIF — special ============ -->
       <section class="chapter">
         <div class="inner">
           <figure class="frame">
@@ -825,13 +1147,13 @@
               Bu fotoğrafı geçen gün çektim, çünkü o an
               <strong>“ne kadar zarif bir kadın”</strong>
               diye düşündüm kendi kendime.
-              <span class="note">— gerçekten çok zarifsin, anne.</span>
+              <span class="note">gerçekten çok zarifsin, anne.</span>
             </figcaption>
           </figure>
         </div>
       </section>
 
-      <!-- ============ CHAPTER 8 — FAVORITE RECENT ============ -->
+      <!-- ============ FAVORITE RECENT — special ============ -->
       <section class="chapter">
         <div class="inner">
           <figure class="frame">
@@ -842,9 +1164,12 @@
             />
             <figcaption>
               Son zamanlarda ikimizden çektiğim
-              <strong>en sevdiğim fotoğraf</strong> bu —
-              gözlerin o kadar güzel parlıyor ki.
-              <span class="note">— ışığını hep koru, anne. ✨</span>
+              <strong>en sevdiğim fotoğraf</strong> bu, gözlerin o kadar güzel
+              parlıyor ki
+              <svg class="inline-icon" viewBox="0 0 32 32" aria-hidden="true">
+                <use href="#i-spark" />
+              </svg>
+              <span class="note">ışığını hep koru, anne.</span>
             </figcaption>
           </figure>
         </div>
@@ -855,83 +1180,90 @@
         <div class="inner">
           <svg
             class="sprig"
-            width="64"
-            height="40"
-            viewBox="0 0 64 40"
+            width="80"
+            height="44"
+            viewBox="0 0 80 44"
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden="true"
           >
             <g fill="none" stroke="#7ea36e" stroke-width="1.4" stroke-linecap="round">
-              <path d="M2 20 C 22 12, 42 28, 62 20" />
+              <path d="M2 22 C 22 12, 58 32, 78 22" />
             </g>
-            <g fill="#9bbf95">
-              <ellipse cx="14" cy="16" rx="3.5" ry="6" transform="rotate(-25 14 16)" />
-              <ellipse cx="26" cy="22" rx="3.5" ry="6" transform="rotate(15 26 22)" />
-              <ellipse cx="38" cy="18" rx="3.5" ry="6" transform="rotate(-15 38 18)" />
-              <ellipse cx="50" cy="22" rx="3.5" ry="6" transform="rotate(20 50 22)" />
+            <g fill="url(#leafGrad)" stroke="#5e8a64" stroke-width="0.6">
+              <ellipse cx="16" cy="18" rx="3.8" ry="6" transform="rotate(-25 16 18)" />
+              <ellipse cx="32" cy="24" rx="3.8" ry="6" transform="rotate(15 32 24)" />
+              <ellipse cx="48" cy="20" rx="3.8" ry="6" transform="rotate(-15 48 20)" />
+              <ellipse cx="62" cy="24" rx="3.8" ry="6" transform="rotate(20 62 24)" />
             </g>
-            <g fill="#e88aa3">
-              <circle cx="32" cy="20" r="3" />
-            </g>
+            <use href="#i-rose" x="34" y="12" width="14" height="14" />
           </svg>
 
-          <h2>Hayatımdaki her başarı, sen olduğun için var.</h2>
+          <h2>
+            Hayatımdaki her başarı, sen olduğun için var.
+          </h2>
           <p>
-            Akademik olsun, kişisel olsun — eriştiğim hiçbir şey
-            sen olmadan mümkün olmazdı.
+            Akademik olsun, kişisel olsun, eriştiğim hiçbir şey sen olmadan
+            mümkün olmazdı.
           </p>
           <p>
             <strong>İyi ki varsın, iyi ki benim annemsin.</strong>
             <br />Seni çok seviyorum.
           </p>
           <div class="heart-burst" aria-hidden="true">
-            <span>❤︎</span>
-            <span>❀</span>
-            <span>❤︎</span>
-            <span>❀</span>
-            <span>❤︎</span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-rose" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-violet" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-lily" /></svg></span>
+            <span class="hb"><svg viewBox="0 0 32 32"><use href="#i-heart" /></svg></span>
           </div>
-          <div class="seal">— oğlun</div>
+          <div class="seal">oğlun</div>
         </div>
       </section>
     </main>
 
     <script>
-      // Floating petals & hearts
+      // Floating petals & hearts (SVG, more hearts)
       (function () {
         var sky = document.getElementById("sky");
         if (!sky) return;
-        var glyphs = ["❀", "✿", "❁", "❤︎", "✾", "❀"];
         var isSmall = window.matchMedia("(max-width: 480px)").matches;
-        var count = isSmall ? 14 : 22;
-        var colors = [
-          "#e88aa3",
-          "#c75e7e",
-          "#9bbf95",
-          "#c9a26a",
-          "#d99cb1",
-          "#7ea36e",
+        // Heart-heavy mix per user request
+        var pool = [
+          "#i-heart", "#i-heart", "#i-heart", "#i-heart", "#i-heart",
+          "#i-rose",  "#i-rose",
+          "#i-lily",
+          "#i-leaf",
+          "#i-violet",
+          "#i-spark"
         ];
+        var count = isSmall ? 22 : 34;
         for (var i = 0; i < count; i++) {
-          var s = document.createElement("span");
-          s.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
-          var size = 12 + Math.random() * 18;
+          var bit = document.createElement("div");
+          bit.className = "bit";
+          var size = 14 + Math.random() * 22;
           var dur = 14 + Math.random() * 14;
           var delay = -Math.random() * dur;
           var left = Math.random() * 100;
-          s.style.left = left + "vw";
-          s.style.fontSize = size + "px";
-          s.style.color = colors[Math.floor(Math.random() * colors.length)];
-          s.style.animationDuration = dur + "s";
-          s.style.animationDelay = delay + "s";
-          sky.appendChild(s);
+          var which = pool[Math.floor(Math.random() * pool.length)];
+          bit.style.left = left + "vw";
+          bit.style.width = size + "px";
+          bit.style.height = size + "px";
+          bit.style.animationDuration = dur + "s";
+          bit.style.animationDelay = delay + "s";
+          bit.innerHTML =
+            '<svg viewBox="0 0 32 32" aria-hidden="true"><use href="' +
+            which +
+            '"/></svg>';
+          sky.appendChild(bit);
         }
       })();
 
       // Scroll-driven reveal
       (function () {
         var targets = document.querySelectorAll(
-          ".frame, .verse, figcaption, .bullets"
+          ".frame, .verse, figcaption, .thanks"
         );
         if (!("IntersectionObserver" in window)) {
           targets.forEach(function (t) {
