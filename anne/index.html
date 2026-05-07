@@ -171,17 +171,26 @@
         margin: 0 auto;
       }
 
+      /* Photo wrapper has NO overflow:hidden so the corner hearts can
+         sit outside the photo's edges without being clipped. */
+      .story .photo {
+        position: relative;
+        margin: 0 auto;
+        padding: 14px 14px 0; /* breathing room so the corner hearts
+                                  have space and never collide with text */
+      }
+
       .story .frame {
         position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        background: var(--cream);
         opacity: 0;
         transform: translateY(28px);
         transition:
           opacity var(--dur) var(--ease),
           transform var(--dur) var(--ease);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        background: var(--cream);
       }
 
       .story.visible .frame {
@@ -198,34 +207,36 @@
         pointer-events: none;
       }
 
-      /* Subtle Ken Burns while in view */
+      /* Slightly bigger, more visible Ken Burns */
       .story .frame img {
         width: 100%;
         height: auto;
         display: block;
         transform: scale(1.02);
         transform-origin: center center;
-        transition: transform 14s linear;
+        transition: transform 12s linear;
       }
 
       .story.visible .frame img {
-        transform: scale(1.08) translate3d(-1%, -1.5%, 0);
+        transform: scale(1.10) translate3d(-1.2%, -1.8%, 0);
       }
 
-      /* Decorative heart on the frame corner */
-      .heart-corner {
+      /* Decorative heart on the photo corner — OUTSIDE the .frame, so
+         the .frame's overflow:hidden no longer clips it. */
+      .story .heart-corner {
         position: absolute;
-        width: 38px;
-        height: 38px;
-        top: -14px;
-        right: -10px;
-        z-index: 2;
+        width: 44px;
+        height: 44px;
+        top: -6px;
+        right: -2px;
+        z-index: 3;
         opacity: 0;
-        transform: scale(0.6) rotate(-12deg);
+        transform: scale(0.55) rotate(-14deg);
         transition:
-          opacity 0.7s var(--ease) 0.35s,
-          transform 0.7s var(--ease) 0.35s;
-        filter: drop-shadow(0 4px 8px rgba(199, 94, 126, 0.35));
+          opacity 0.6s var(--ease) 0.35s,
+          transform 0.6s var(--ease) 0.35s;
+        filter: drop-shadow(0 5px 10px rgba(199, 94, 126, 0.4));
+        pointer-events: none;
       }
 
       .story.visible .heart-corner {
@@ -382,20 +393,30 @@
         .story .sub  { font-size: 17.5px; }
       }
 
+      /* For users with Reduce Motion enabled (common on iPhone),
+         disable infinite/large-movement animations and the slow Ken Burns,
+         but KEEP gentle opacity transitions — those don't trigger
+         vestibular discomfort and they're the soul of the page. */
       @media (prefers-reduced-motion: reduce) {
-        * {
-          animation-duration: 0.01ms !important;
-          transition-duration: 0.01ms !important;
+        .bouquet,
+        .bouquet .sway-l,
+        .bouquet .sway-r,
+        .cover .scroll::after,
+        .heart-cluster .h.h3 svg {
+          animation: none !important;
         }
-        .story .frame,
-        .story .text,
-        .story .sub,
-        .story .heart-corner,
-        .heart-cluster {
-          opacity: 1 !important;
+        .bouquet { opacity: 1 !important; transform: none !important; }
+        .story .frame img {
+          transition: none !important;
           transform: none !important;
         }
-        .story .frame img { transform: none !important; }
+        .story .heart-corner {
+          /* still pop in but skip rotation */
+          transform: scale(0.7) !important;
+        }
+        .story.visible .heart-corner {
+          transform: scale(1) !important;
+        }
       }
     </style>
   </head>
@@ -567,9 +588,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG" alt="Genç annem ve ben" loading="eager" />
+              <div class="frame">
+                <img src="photos/e00cce15-8442-43d8-a0e9-fa663f6090f0.JPG" alt="Genç annem ve ben" loading="eager" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -589,9 +612,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_5045.jpg" alt="Annem ve bebek ben" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_5045.jpg" alt="Annem ve bebek ben" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -608,9 +633,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_8104.JPG" alt="Annem ve ben dağ manzarasında" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_8104.JPG" alt="Annem ve ben dağ manzarasında" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -629,9 +656,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_8457.JPG" alt="Annem ve ben begonvil çiçeklerinin önünde" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_8457.JPG" alt="Annem ve ben begonvil çiçeklerinin önünde" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -650,9 +679,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_3065.jpg" alt="Annem ve ben" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_3065.jpg" alt="Annem ve ben" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -671,9 +702,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/E0E9DEE6-FB62-4D7F-A1A5-857E7A094EBE.JPG" alt="Annem elinde fincanla gülümserken" loading="lazy" />
+              <div class="frame">
+                <img src="photos/E0E9DEE6-FB62-4D7F-A1A5-857E7A094EBE.JPG" alt="Annem elinde fincanla gülümserken" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -691,9 +724,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_1084.jpg" alt="Annem sokakta, çok zarif" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_1084.jpg" alt="Annem sokakta, çok zarif" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
@@ -711,9 +746,11 @@
         <svg class="accent-rule" viewBox="0 0 64 24"><use href="#i-sprig" /></svg>
         <div class="inner">
           <div class="stage">
-            <div class="frame">
+            <div class="photo">
               <svg class="heart-corner" viewBox="0 0 32 32"><use href="#i-heart" /></svg>
-              <img src="photos/IMG_0015.jpg" alt="Annemle son zamanlardaki en sevdiğim fotoğrafımız" loading="lazy" />
+              <div class="frame">
+                <img src="photos/IMG_0015.jpg" alt="Annemle son zamanlardaki en sevdiğim fotoğrafımız" loading="lazy" />
+              </div>
             </div>
             <div class="text">
               <p class="lead">
