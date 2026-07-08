@@ -7,9 +7,9 @@
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Muhammed Ikbal Oruc"
+title                    : "M. Ikbal Oruc"
 title_separator          : "-"
-name                     : &name "Muhammed Ikbal Oruc"
+name                     : &name "M. Ikbal Oruc"
 description              : &description "Econoimcs Masters @ Koç University"
 url                      : https://oruc47.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
@@ -80,7 +80,7 @@ analytics:
 
 # Site Author
 author:
-  name             : "Muhammed Ikbal Oruc"
+  name             : "M. Ikbal Oruc"
   avatar           : "profile.png"
   bio              : "Econ MA at Koç University with a full merit scholarship. 2023 Georgetown graduate with a double major in Economics and Computer Science."
   location         : "Istanbul, Doha and D.C"
