@@ -468,13 +468,16 @@
       <section class="card panel hidden" id="setup">
         <h2>One-time setup</h2>
         <p>
-          The ledger lives in the private repo
-          <code id="setup-repo">oruc47/alman-data</code>. This page needs a token
-          to read and write it. Paste it once per phone &mdash; it stays in this
-          browser only and is never committed anywhere.
+          <b>If &#304;kbal sent you a setup link, just open that link</b> &mdash; it
+          configures this page for you and you can ignore everything below.
+        </p>
+        <p>
+          Otherwise: the ledger lives in the private repo
+          <code id="setup-repo">oruc47/alman-data</code>, and this page needs a
+          token to read and write it. It stays in this browser only and is never
+          committed anywhere.
         </p>
         <ol>
-          <li>Create a <b>private</b> repo named <code>alman-data</code>.</li>
           <li>
             Make a fine-grained token at
             <a
@@ -522,6 +525,10 @@
           <button class="btn-primary" id="set-save">Save</button>
           <button class="ghost" id="set-download">Download CSV</button>
         </div>
+        <button class="ghost" id="set-invite">
+          Copy setup link for S&#305;la
+        </button>
+        <input type="text" id="set-invite-out" class="hidden" readonly />
         <button class="ghost" id="set-forget">Forget token on this phone</button>
         <div class="msg good hidden" id="set-msg"></div>
       </section>
@@ -548,22 +555,22 @@
               enterkeyhint="done"
             />
             <div class="seg" id="a-paid" role="group" aria-label="Paid by">
-              <button type="button" data-v="I" aria-pressed="true">Ikbal</button>
-              <button type="button" data-v="S" aria-pressed="false">Sila</button>
+              <button type="button" data-v="I" aria-pressed="true">İkbal</button>
+              <button type="button" data-v="S" aria-pressed="false">Sıla</button>
             </div>
           </div>
           <div class="f-row">
             <select id="a-split" aria-label="Split">
               <option value="even">50 / 50</option>
-              <option value="ikbal">Ikbal 100%</option>
-              <option value="sila">Sila 100%</option>
+              <option value="ikbal">İkbal 100%</option>
+              <option value="sila">Sıla 100%</option>
               <option value="custom">Custom&hellip;</option>
             </select>
             <input
               type="text"
               id="a-pct"
               inputmode="decimal"
-              placeholder="Ikbal %"
+              placeholder="İkbal %"
               class="hidden"
             />
           </div>
@@ -634,9 +641,31 @@
       let token = localStorage.getItem(LS_TOKEN) || "";
       let repo = localStorage.getItem(LS_REPO) || DEFAULT_REPO;
 
+      // A setup link — .../alman/#t=<token>&r=<owner/repo> — configures a phone
+      // with no typing at all. The fragment never leaves the browser (it is not
+      // sent to any server) and the token is never in this repo, so GitHub's
+      // secret scanning has nothing to revoke. The hash is deliberately left in
+      // the URL: an Add-to-Home-Screen bookmark keeps it, so the token is
+      // re-applied automatically if Safari ever evicts this site's storage.
+      (function configureFromShareLink() {
+        const hash = location.hash.replace(/^#/, "");
+        if (!hash) return;
+        const q = new URLSearchParams(hash);
+        const r = q.get("r");
+        const t = q.get("t");
+        if (r && /^[\w.-]+\/[\w.-]+$/.test(r)) {
+          repo = r;
+          localStorage.setItem(LS_REPO, repo);
+        }
+        if (t) {
+          token = t;
+          localStorage.setItem(LS_TOKEN, token);
+        }
+      })();
+
       /* =========================== model =========================== */
       // row: {id, date:'YYYY-MM-DD', desc, cents:int, paid:'I'|'S',
-      //       split:'even'|'ikbal'|'sila'|'custom', pct: 0..1 (Ikbal's share)}
+      //       split:'even'|'ikbal'|'sila'|'custom', pct: 0..1 (İkbal's share)}
       const state = { rows: [], sha: null, pending: [], saving: false };
       let openId = null;
       let saveQueued = false;
@@ -654,6 +683,16 @@
 
       const PCT = { even: 0.5, ikbal: 1, sila: 0 };
 
+      // "İ".toLowerCase() yields "i" + U+0307 and "ı" never folds to "i", so
+      // fold Turkish letters to ASCII before matching CSV values.
+      function norm(v) {
+        return String(v == null ? "" : v)
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\u0131/g, "i");
+      }
+
       function parseAmount(v) {
         const n = parseFloat(String(v).replace(/[^\d.,-]/g, "").replace(",", "."));
         return isFinite(n) ? n : NaN;
@@ -668,13 +707,13 @@
 
       function splitLabel(r) {
         if (r.split === "even") return "50/50";
-        if (r.split === "ikbal") return "Ikbal";
-        if (r.split === "sila") return "Sila";
+        if (r.split === "ikbal") return "İkbal";
+        if (r.split === "sila") return "Sıla";
         const i = Math.round(r.pct * 100);
         return i + "/" + (100 - i);
       }
 
-      // positive => Sila owes Ikbal; negative => Ikbal owes Sila
+      // positive => Sıla owes İkbal; negative => İkbal owes Sıla
       function netCents() {
         let net = 0;
         for (const r of state.rows) {
@@ -687,10 +726,10 @@
 
       function balanceSentence() {
         const n = netCents();
-        if (n === 0) return "Ikbal and Sila do not owe each other anything";
+        if (n === 0) return "İkbal and Sıla do not owe each other anything";
         return n > 0
-          ? "Sila owes Ikbal " + money(n)
-          : "Ikbal owes Sila " + money(n);
+          ? "Sıla owes İkbal " + money(n)
+          : "İkbal owes Sıla " + money(n);
       }
 
       /* =========================== csv =========================== */
@@ -700,11 +739,11 @@
       }
 
       function toCSV(rows) {
-        const paidName = { I: "Ikbal", S: "Sila" };
+        const paidName = { I: "İkbal", S: "Sıla" };
         const splitName = {
           even: "50/50",
-          ikbal: "Ikbal 100%",
-          sila: "Sila 100%",
+          ikbal: "İkbal 100%",
+          sila: "Sıla 100%",
           custom: "Custom",
         };
         const lines = [HEADER];
@@ -763,7 +802,7 @@
           if (!c[0]) continue;
           const dollars = parseAmount(c[3]);
           let pct = parseFloat(c[6]);
-          const splitRaw = (c[5] || "").toLowerCase();
+          const splitRaw = norm(c[5]);
           let split =
             splitRaw.indexOf("50") === 0
               ? "even"
@@ -778,7 +817,7 @@
             date: c[1] || today(),
             desc: c[2] || "",
             cents: toCents(isFinite(dollars) ? dollars : 0),
-            paid: (c[4] || "").toLowerCase().charAt(0) === "s" ? "S" : "I",
+            paid: norm(c[4]).charAt(0) === "s" ? "S" : "I",
             split: split,
             pct: Math.min(1, Math.max(0, pct)),
           });
@@ -958,9 +997,9 @@
           "balance " + (n === 0 ? "settled" : n > 0 ? "to-ikbal" : "to-sila");
         b.innerHTML =
           n === 0
-            ? '<div class="who">Ikbal and Sila do not owe each other anything</div>'
+            ? '<div class="who">İkbal and Sıla do not owe each other anything</div>'
             : '<div class="who">' +
-              (n > 0 ? "Sila owes Ikbal" : "Ikbal owes Sila") +
+              (n > 0 ? "Sıla owes İkbal" : "İkbal owes Sıla") +
               '</div><div class="amt">' +
               money(n) +
               "</div>";
@@ -1020,7 +1059,7 @@
           '<div class="paid"><span class="chip ' +
           (r.paid === "I" ? "i" : "s") +
           '">' +
-          r.paid +
+          (r.paid === "I" ? "İ" : "S") +
           "</span></div>" +
           '<div class="split">' +
           splitLabel(r) +
@@ -1049,10 +1088,10 @@
           '<div><label>Paid by</label><div class="seg" data-f="paid">' +
           '<button type="button" data-v="I" aria-pressed="' +
           (r.paid === "I") +
-          '">Ikbal</button>' +
+          '">İkbal</button>' +
           '<button type="button" data-v="S" aria-pressed="' +
           (r.paid === "S") +
-          '">Sila</button></div></div>' +
+          '">Sıla</button></div></div>' +
           '<div class="f-row"><div><label>Split</label><select data-f="split">' +
           ["even", "ikbal", "sila", "custom"]
             .map(
@@ -1062,14 +1101,14 @@
                 '"' +
                 (r.split === v ? " selected" : "") +
                 ">" +
-                ["50 / 50", "Ikbal 100%", "Sila 100%", "Custom…"][i] +
+                ["50 / 50", "İkbal 100%", "Sıla 100%", "Custom…"][i] +
                 "</option>"
             )
             .join("") +
           "</select></div>" +
           '<div class="' +
           (r.split === "custom" ? "" : "hidden") +
-          '" data-pctwrap><label>Ikbal %</label>' +
+          '" data-pctwrap><label>İkbal %</label>' +
           '<input type="text" inputmode="decimal" data-f="pct" value="' +
           pctVal +
           '" /></div></div>' +
@@ -1298,6 +1337,39 @@
         $("#set-msg").classList.remove("hidden");
         showApp();
         await load();
+      });
+
+      function shareLink() {
+        return (
+          location.origin +
+          location.pathname +
+          "#t=" +
+          encodeURIComponent(token) +
+          "&r=" +
+          encodeURIComponent(repo)
+        );
+      }
+
+      $("#set-invite").addEventListener("click", async () => {
+        const msg = $("#set-msg");
+        const out = $("#set-invite-out");
+        msg.classList.remove("hidden");
+        if (!token) {
+          msg.className = "msg bad";
+          msg.textContent = "No token on this phone yet.";
+          return;
+        }
+        const link = shareLink();
+        out.value = link;
+        out.classList.remove("hidden");
+        msg.className = "msg good";
+        try {
+          await navigator.clipboard.writeText(link);
+          msg.textContent =
+            "Link copied. Send it once; opening it sets up that phone.";
+        } catch (e) {
+          msg.textContent = "Long-press the field above to copy the link.";
+        }
       });
 
       $("#set-forget").addEventListener("click", () => {
