@@ -1,0 +1,1367 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#12151a" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="alman" />
+    <title>alman</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --card: #ffffff;
+        --ink: #14181f;
+        --muted: #6b7280;
+        --faint: #9ca3af;
+        --line: #e5e7eb;
+        --line-soft: #f1f2f4;
+        --ikbal: #2563eb;
+        --sila: #be3f7e;
+        --accent: #0f766e;
+        --danger: #dc2626;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.06),
+          0 1px 3px rgba(16, 24, 40, 0.04);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12151a;
+          --card: #1a1f27;
+          --ink: #e8eaee;
+          --muted: #98a1b0;
+          --faint: #6b7482;
+          --line: #2b323d;
+          --line-soft: #232932;
+          --ikbal: #7aa5ff;
+          --sila: #f087b6;
+          --accent: #4fd1c5;
+          --danger: #f87171;
+          --shadow: none;
+        }
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 400 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI",
+          system-ui, sans-serif;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          calc(env(safe-area-inset-bottom) + 28px) env(safe-area-inset-left);
+        -webkit-text-size-adjust: 100%;
+      }
+      .wrap {
+        max-width: 620px;
+        margin: 0 auto;
+        padding: 14px 12px 0;
+      }
+
+      /* ---------- header ---------- */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .brand {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .hdr-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #status {
+        font-size: 12px;
+        color: var(--faint);
+        font-variant-numeric: tabular-nums;
+      }
+      #status.err {
+        color: var(--danger);
+      }
+      .icon-btn {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--muted);
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+      }
+      .icon-btn:active {
+        background: var(--line-soft);
+      }
+
+      /* ---------- balance ---------- */
+      .balance {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 18px 16px;
+        text-align: center;
+        margin-bottom: 14px;
+      }
+      .balance .who {
+        font-size: 14px;
+        color: var(--muted);
+        letter-spacing: 0.01em;
+      }
+      .balance .amt {
+        font-size: 40px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        margin-top: 4px;
+      }
+      .balance.settled .who {
+        font-size: 15px;
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .balance.to-ikbal .amt {
+        color: var(--ikbal);
+      }
+      .balance.to-sila .amt {
+        color: var(--sila);
+      }
+
+      /* ---------- add form ---------- */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      form.add {
+        padding: 10px;
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .f-row {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 1fr 1fr;
+      }
+      input,
+      select,
+      button {
+        font: inherit;
+        font-size: 16px; /* keeps iOS from zooming on focus */
+        color: var(--ink);
+      }
+      input[type="text"],
+      input[type="password"],
+      select {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px 12px;
+        appearance: none;
+      }
+      select {
+        background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+          linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+        background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+        background-size: 5px 5px, 5px 5px;
+        background-repeat: no-repeat;
+        padding-right: 30px;
+      }
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: -1px;
+      }
+      input::placeholder {
+        color: var(--faint);
+      }
+      .seg {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .seg button {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        padding: 11px 4px;
+        font-size: 15px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .seg button + button {
+        border-left: 1px solid var(--line);
+      }
+      .seg button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--card);
+        font-weight: 550;
+      }
+      .btn-primary {
+        appearance: none;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+        padding: 12px;
+        cursor: pointer;
+      }
+      .btn-primary:disabled {
+        opacity: 0.45;
+      }
+      @media (prefers-color-scheme: dark) {
+        .btn-primary {
+          color: #0b1220;
+        }
+      }
+
+      /* ---------- ledger table ---------- */
+      .thead,
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 78px 30px 60px;
+        gap: 8px;
+        align-items: center;
+      }
+      .thead {
+        padding: 9px 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faint);
+        border-bottom: 1px solid var(--line);
+      }
+      .thead .r,
+      .row .amt {
+        text-align: right;
+      }
+      .thead .c,
+      .row .paid {
+        text-align: center;
+      }
+      .row {
+        padding: 11px 12px;
+        cursor: pointer;
+        font-size: 15px;
+      }
+      .row + .row,
+      .editor + .row {
+        border-top: 1px solid var(--line-soft);
+      }
+      .row:active {
+        background: var(--line-soft);
+      }
+      .row.open {
+        background: var(--line-soft);
+      }
+      .row .desc {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .row .date {
+        display: block;
+        font-size: 11px;
+        color: var(--faint);
+        letter-spacing: 0.02em;
+      }
+      .row .amt {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum";
+      }
+      .chip {
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .chip.i {
+        background: var(--ikbal);
+      }
+      .chip.s {
+        background: var(--sila);
+      }
+      @media (prefers-color-scheme: dark) {
+        .chip {
+          color: #0b1220;
+        }
+      }
+      .row .split {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .editor {
+        padding: 4px 12px 14px;
+        display: grid;
+        gap: 8px;
+        background: var(--line-soft);
+        border-top: 1px dashed var(--line);
+      }
+      .editor label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--faint);
+        display: block;
+        margin-bottom: 3px;
+      }
+      .editor input[type="text"],
+      .editor select {
+        background: var(--card);
+      }
+      .btn-del {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--danger);
+        border-radius: 10px;
+        padding: 11px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+      .empty {
+        padding: 26px 16px;
+        text-align: center;
+        color: var(--faint);
+        font-size: 14px;
+      }
+      .totals {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- panels ---------- */
+      .panel {
+        margin-top: 14px;
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .panel h2 {
+        margin: 0;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .panel p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .panel ol {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      .panel code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 1px 5px;
+      }
+      .panel a {
+        color: var(--accent);
+      }
+      .row-2 {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+      .ghost {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        border-radius: 10px;
+        padding: 11px 14px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .danger-zone {
+        border-color: color-mix(in srgb, var(--danger) 35%, var(--line));
+      }
+      .msg {
+        font-size: 13px;
+        padding: 9px 11px;
+        border-radius: 9px;
+        line-height: 1.45;
+      }
+      .msg.bad {
+        background: color-mix(in srgb, var(--danger) 12%, transparent);
+        color: var(--danger);
+      }
+      .msg.good {
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--accent);
+      }
+      .hidden {
+        display: none !important;
+      }
+      footer {
+        text-align: center;
+        font-size: 11px;
+        color: var(--faint);
+        margin: 18px 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <span class="brand">alman</span>
+        <div class="hdr-right">
+          <span id="status"></span>
+          <button class="icon-btn" id="gear" title="Settings" aria-label="Settings">&#9881;</button>
+        </div>
+      </header>
+
+      <!-- setup (shown when no token) -->
+      <section class="card panel hidden" id="setup">
+        <h2>One-time setup</h2>
+        <p>
+          The ledger lives in the private repo
+          <code id="setup-repo">oruc47/alman-data</code>. This page needs a token
+          to read and write it. Paste it once per phone &mdash; it stays in this
+          browser only and is never committed anywhere.
+        </p>
+        <ol>
+          <li>Create a <b>private</b> repo named <code>alman-data</code>.</li>
+          <li>
+            Make a fine-grained token at
+            <a
+              href="https://github.com/settings/personal-access-tokens/new"
+              target="_blank"
+              rel="noopener"
+              >github.com/settings/personal-access-tokens</a
+            >: resource owner <code>oruc47</code>, <i>Only select
+            repositories</i> &rarr; <code>alman-data</code>, permission
+            <b>Contents: Read and write</b>.
+          </li>
+          <li>Paste it below.</li>
+        </ol>
+        <input
+          type="password"
+          id="setup-token"
+          placeholder="github_pat_..."
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button class="btn-primary" id="setup-save">Connect</button>
+        <div class="msg bad hidden" id="setup-msg"></div>
+      </section>
+
+      <!-- settings -->
+      <section class="card panel hidden" id="settings">
+        <h2>Settings</h2>
+        <div>
+          <label for="set-repo">Data repo (owner/name)</label>
+          <input type="text" id="set-repo" autocapitalize="off" spellcheck="false" />
+        </div>
+        <div>
+          <label for="set-token">Token (stored on this phone only)</label>
+          <input
+            type="password"
+            id="set-token"
+            placeholder="unchanged"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="row-2">
+          <button class="btn-primary" id="set-save">Save</button>
+          <button class="ghost" id="set-download">Download CSV</button>
+        </div>
+        <button class="ghost" id="set-forget">Forget token on this phone</button>
+        <div class="msg good hidden" id="set-msg"></div>
+      </section>
+
+      <!-- main app -->
+      <main id="app" class="hidden">
+        <div class="balance" id="balance">
+          <div class="who">&nbsp;</div>
+        </div>
+
+        <form class="card add" id="add-form" autocomplete="off">
+          <input
+            type="text"
+            id="a-desc"
+            placeholder="Description"
+            enterkeyhint="next"
+          />
+          <div class="f-row">
+            <input
+              type="text"
+              id="a-amt"
+              inputmode="decimal"
+              placeholder="Amount"
+              enterkeyhint="done"
+            />
+            <div class="seg" id="a-paid" role="group" aria-label="Paid by">
+              <button type="button" data-v="I" aria-pressed="true">Ikbal</button>
+              <button type="button" data-v="S" aria-pressed="false">Sila</button>
+            </div>
+          </div>
+          <div class="f-row">
+            <select id="a-split" aria-label="Split">
+              <option value="even">50 / 50</option>
+              <option value="ikbal">Ikbal 100%</option>
+              <option value="sila">Sila 100%</option>
+              <option value="custom">Custom&hellip;</option>
+            </select>
+            <input
+              type="text"
+              id="a-pct"
+              inputmode="decimal"
+              placeholder="Ikbal %"
+              class="hidden"
+            />
+          </div>
+          <button class="btn-primary" type="submit" id="a-submit">Add</button>
+        </form>
+
+        <div class="card" id="ledger">
+          <div class="thead">
+            <div>Description</div>
+            <div class="r">Amount</div>
+            <div class="c">Paid</div>
+            <div class="r">Split</div>
+          </div>
+          <div id="rows"></div>
+          <div class="totals hidden" id="totals"></div>
+        </div>
+
+        <section class="card panel danger-zone">
+          <h2>Reset</h2>
+          <p>
+            Archives the current ledger to
+            <code>archive/</code> in the data repo, then starts an empty one.
+          </p>
+          <button class="ghost" id="reset-open">Reset ledger&hellip;</button>
+          <div class="hidden" id="reset-box" style="display: grid; gap: 8px">
+            <input
+              type="password"
+              id="reset-pw"
+              placeholder="Password"
+              autocomplete="off"
+            />
+            <div class="row-2">
+              <button class="btn-primary" id="reset-go">Archive &amp; reset</button>
+              <button class="ghost" id="reset-cancel">Cancel</button>
+            </div>
+          </div>
+          <div class="msg hidden" id="reset-msg"></div>
+        </section>
+
+        <footer id="foot"></footer>
+      </main>
+    </div>
+
+    <script>
+      "use strict";
+
+      /* =========================== config =========================== */
+      const DEFAULT_REPO = "oruc47/alman-data";
+      const FILE = "alman.csv";
+      const HEADER = "id,date,description,amount,paid_by,split,ikbal_share";
+      const RESET_PASSWORD = "crashandburn";
+      const LS_TOKEN = "alman.token";
+      const LS_REPO = "alman.repo";
+      const POLL_MS = 20000;
+
+      const $ = (s) => document.querySelector(s);
+      const el = {
+        status: $("#status"),
+        setup: $("#setup"),
+        settings: $("#settings"),
+        app: $("#app"),
+        balance: $("#balance"),
+        rows: $("#rows"),
+        totals: $("#totals"),
+        foot: $("#foot"),
+      };
+
+      let token = localStorage.getItem(LS_TOKEN) || "";
+      let repo = localStorage.getItem(LS_REPO) || DEFAULT_REPO;
+
+      /* =========================== model =========================== */
+      // row: {id, date:'YYYY-MM-DD', desc, cents:int, paid:'I'|'S',
+      //       split:'even'|'ikbal'|'sila'|'custom', pct: 0..1 (Ikbal's share)}
+      const state = { rows: [], sha: null, pending: [], saving: false };
+      let openId = null;
+      let saveQueued = false;
+      let saveTimer = null;
+
+      const newId = () =>
+        Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const today = () => new Date().toISOString().slice(0, 10);
+
+      const PCT = { even: 0.5, ikbal: 1, sila: 0 };
+
+      function parseAmount(v) {
+        const n = parseFloat(String(v).replace(/[^\d.,-]/g, "").replace(",", "."));
+        return isFinite(n) ? n : NaN;
+      }
+      const toCents = (dollars) => Math.round(dollars * 100);
+      const money = (cents) =>
+        "$" +
+        (Math.abs(cents) / 100).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+      function splitLabel(r) {
+        if (r.split === "even") return "50/50";
+        if (r.split === "ikbal") return "Ikbal";
+        if (r.split === "sila") return "Sila";
+        const i = Math.round(r.pct * 100);
+        return i + "/" + (100 - i);
+      }
+
+      // positive => Sila owes Ikbal; negative => Ikbal owes Sila
+      function netCents() {
+        let net = 0;
+        for (const r of state.rows) {
+          const ikbal = Math.round(r.cents * r.pct);
+          const sila = r.cents - ikbal;
+          net += r.paid === "I" ? sila : -ikbal;
+        }
+        return net;
+      }
+
+      function balanceSentence() {
+        const n = netCents();
+        if (n === 0) return "Ikbal and Sila do not owe each other anything";
+        return n > 0
+          ? "Sila owes Ikbal " + money(n)
+          : "Ikbal owes Sila " + money(n);
+      }
+
+      /* =========================== csv =========================== */
+      function csvCell(s) {
+        s = String(s == null ? "" : s);
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      }
+
+      function toCSV(rows) {
+        const paidName = { I: "Ikbal", S: "Sila" };
+        const splitName = {
+          even: "50/50",
+          ikbal: "Ikbal 100%",
+          sila: "Sila 100%",
+          custom: "Custom",
+        };
+        const lines = [HEADER];
+        for (const r of rows) {
+          lines.push(
+            [
+              r.id,
+              r.date,
+              csvCell(r.desc),
+              (r.cents / 100).toFixed(2),
+              paidName[r.paid],
+              splitName[r.split],
+              r.pct.toFixed(4).replace(/0+$/, "").replace(/\.$/, ""),
+            ].join(",")
+          );
+        }
+        return lines.join("\n") + "\n";
+      }
+
+      function parseCSV(text) {
+        const out = [];
+        let row = [],
+          cell = "",
+          q = false;
+        for (let i = 0; i < text.length; i++) {
+          const c = text[i];
+          if (q) {
+            if (c === '"') {
+              if (text[i + 1] === '"') {
+                cell += '"';
+                i++;
+              } else q = false;
+            } else cell += c;
+          } else if (c === '"') q = true;
+          else if (c === ",") {
+            row.push(cell);
+            cell = "";
+          } else if (c === "\n" || c === "\r") {
+            if (c === "\r" && text[i + 1] === "\n") i++;
+            row.push(cell);
+            cell = "";
+            if (row.length > 1 || row[0] !== "") out.push(row);
+            row = [];
+          } else cell += c;
+        }
+        row.push(cell);
+        if (row.length > 1 || row[0] !== "") out.push(row);
+        return out;
+      }
+
+      function rowsFromCSV(text) {
+        const table = parseCSV(text);
+        if (table.length && table[0][0] === "id") table.shift();
+        const rows = [];
+        for (const c of table) {
+          if (!c[0]) continue;
+          const dollars = parseAmount(c[3]);
+          let pct = parseFloat(c[6]);
+          const splitRaw = (c[5] || "").toLowerCase();
+          let split =
+            splitRaw.indexOf("50") === 0
+              ? "even"
+              : splitRaw.indexOf("ikbal") === 0
+              ? "ikbal"
+              : splitRaw.indexOf("sila") === 0
+              ? "sila"
+              : "custom";
+          if (!isFinite(pct)) pct = PCT[split] != null ? PCT[split] : 0.5;
+          rows.push({
+            id: c[0],
+            date: c[1] || today(),
+            desc: c[2] || "",
+            cents: toCents(isFinite(dollars) ? dollars : 0),
+            paid: (c[4] || "").toLowerCase().charAt(0) === "s" ? "S" : "I",
+            split: split,
+            pct: Math.min(1, Math.max(0, pct)),
+          });
+        }
+        return rows;
+      }
+
+      /* =========================== github =========================== */
+      function b64enc(str) {
+        const bytes = new TextEncoder().encode(str);
+        let s = "";
+        for (let i = 0; i < bytes.length; i += 0x8000)
+          s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        return btoa(s);
+      }
+      function b64dec(b64) {
+        const bin = atob(String(b64).replace(/\s/g, ""));
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return new TextDecoder().decode(bytes);
+      }
+
+      const api = (path) =>
+        "https://api.github.com/repos/" + repo + "/contents/" + path;
+
+      function headers() {
+        return {
+          Authorization: "Bearer " + token,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        };
+      }
+
+      async function apiError(res) {
+        let detail = "";
+        try {
+          const j = await res.json();
+          detail = j && j.message ? j.message : "";
+        } catch (e) {}
+        if (res.status === 401) return "Token rejected (401). Re-paste it in settings.";
+        if (res.status === 403)
+          return "Forbidden (403) — token lacks Contents: write on " + repo + ".";
+        if (res.status === 404)
+          return "Not found (404) — does " + repo + " exist and does the token cover it?";
+        return "GitHub " + res.status + (detail ? ": " + detail : "");
+      }
+
+      // returns {rows, sha, text} ; sha null when the file does not exist yet
+      async function fetchFile() {
+        const res = await fetch(api(FILE) + "?t=" + Date.now(), {
+          headers: headers(),
+          cache: "no-store",
+        });
+        if (res.status === 404) return { rows: [], sha: null, text: "" };
+        if (!res.ok) throw new Error(await apiError(res));
+        const j = await res.json();
+        const text = b64dec(j.content || "");
+        return { rows: rowsFromCSV(text), sha: j.sha, text: text };
+      }
+
+      function putFile(path, content, sha, message) {
+        const body = { message: message, content: b64enc(content) };
+        if (sha) body.sha = sha;
+        return fetch(api(path), {
+          method: "PUT",
+          headers: Object.assign({ "Content-Type": "application/json" }, headers()),
+          body: JSON.stringify(body),
+        });
+      }
+
+      /* =========================== sync =========================== */
+      function setStatus(kind, text) {
+        el.status.className = kind === "err" ? "err" : "";
+        el.status.textContent = text || "";
+        el.status.title = text || "";
+      }
+
+      function applyOps(base, ops) {
+        let out = base.slice();
+        for (const op of ops) {
+          if (op.type === "add") {
+            if (!out.some((r) => r.id === op.row.id)) out.push(op.row);
+          } else if (op.type === "set") {
+            const i = out.findIndex((r) => r.id === op.row.id);
+            if (i >= 0) out[i] = op.row;
+          } else if (op.type === "del") {
+            out = out.filter((r) => r.id !== op.id);
+          }
+        }
+        return out;
+      }
+
+      function pushOp(op) {
+        state.pending.push(op);
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(save, 600);
+        setStatus("", "• unsaved");
+      }
+
+      function commitMessage() {
+        return (
+          "alman: " + state.rows.length + " entries — " + balanceSentence()
+        );
+      }
+
+      async function save() {
+        clearTimeout(saveTimer);
+        if (!token) return;
+        if (state.saving) {
+          saveQueued = true;
+          return;
+        }
+        state.saving = true;
+        setStatus("", "saving…");
+        try {
+          let ok = false;
+          for (let attempt = 0; attempt < 4 && !ok; attempt++) {
+            const res = await putFile(
+              FILE,
+              toCSV(state.rows),
+              state.sha,
+              commitMessage()
+            );
+            if (res.ok) {
+              const j = await res.json();
+              state.sha = j.content.sha;
+              state.pending = [];
+              ok = true;
+              break;
+            }
+            // conflict: someone else wrote. Refetch, replay our edits, retry.
+            if (res.status === 409 || res.status === 412 || res.status === 422) {
+              const fresh = await fetchFile();
+              state.rows = applyOps(fresh.rows, state.pending);
+              state.sha = fresh.sha;
+              render();
+              continue;
+            }
+            throw new Error(await apiError(res));
+          }
+          if (!ok) throw new Error("Could not save after 4 tries — try again.");
+          setStatus("", "saved " + new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+          }));
+        } catch (e) {
+          setStatus("err", e.message);
+        } finally {
+          state.saving = false;
+          if (saveQueued) {
+            saveQueued = false;
+            save();
+          }
+        }
+      }
+
+      async function load(quiet) {
+        if (!token) return;
+        if (!quiet) setStatus("", "loading…");
+        try {
+          const fresh = await fetchFile();
+          state.rows = applyOps(fresh.rows, state.pending);
+          state.sha = fresh.sha;
+          render();
+          if (!state.pending.length) setStatus("", quiet ? el.status.textContent : "");
+        } catch (e) {
+          setStatus("err", e.message);
+        }
+      }
+
+      /* =========================== render =========================== */
+      function render() {
+        // balance
+        const n = netCents();
+        const b = el.balance;
+        b.className =
+          "balance " + (n === 0 ? "settled" : n > 0 ? "to-ikbal" : "to-sila");
+        b.innerHTML =
+          n === 0
+            ? '<div class="who">Ikbal and Sila do not owe each other anything</div>'
+            : '<div class="who">' +
+              (n > 0 ? "Sila owes Ikbal" : "Ikbal owes Sila") +
+              '</div><div class="amt">' +
+              money(n) +
+              "</div>";
+
+        // rows, newest first
+        const list = state.rows.slice().reverse();
+        if (!list.length) {
+          el.rows.innerHTML =
+            '<div class="empty">No entries yet.</div>';
+          el.totals.classList.add("hidden");
+        } else {
+          el.rows.innerHTML = list
+            .map((r) => rowHTML(r) + (r.id === openId ? editorHTML(r) : ""))
+            .join("");
+          const total = state.rows.reduce((s, r) => s + r.cents, 0);
+          el.totals.classList.remove("hidden");
+          el.totals.innerHTML =
+            "<span>" +
+            state.rows.length +
+            (state.rows.length === 1 ? " entry" : " entries") +
+            "</span><span>total spent " +
+            money(total) +
+            "</span>";
+        }
+        el.foot.textContent = repo + " / " + FILE;
+      }
+
+      const esc = (s) =>
+        String(s).replace(/[&<>"]/g, (c) =>
+          ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])
+        );
+
+      function shortDate(d) {
+        const t = Date.parse(d + "T12:00:00");
+        if (!isFinite(t)) return d;
+        return new Date(t).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function rowHTML(r) {
+        return (
+          '<div class="row' +
+          (r.id === openId ? " open" : "") +
+          '" data-id="' +
+          r.id +
+          '">' +
+          '<div class="desc">' +
+          (esc(r.desc) || '<span style="color:var(--faint)">(no description)</span>') +
+          '<span class="date">' +
+          shortDate(r.date) +
+          "</span></div>" +
+          '<div class="amt">' +
+          money(r.cents) +
+          "</div>" +
+          '<div class="paid"><span class="chip ' +
+          (r.paid === "I" ? "i" : "s") +
+          '">' +
+          r.paid +
+          "</span></div>" +
+          '<div class="split">' +
+          splitLabel(r) +
+          "</div>" +
+          "</div>"
+        );
+      }
+
+      function editorHTML(r) {
+        const pctVal = Math.round(r.pct * 100);
+        return (
+          '<div class="editor" data-id="' +
+          r.id +
+          '">' +
+          '<div><label>Description</label><input type="text" data-f="desc" value="' +
+          esc(r.desc) +
+          '" /></div>' +
+          '<div class="f-row">' +
+          '<div><label>Amount</label><input type="text" inputmode="decimal" data-f="amt" value="' +
+          (r.cents / 100).toFixed(2) +
+          '" /></div>' +
+          '<div><label>Date</label><input type="text" inputmode="numeric" data-f="date" value="' +
+          esc(r.date) +
+          '" /></div>' +
+          "</div>" +
+          '<div><label>Paid by</label><div class="seg" data-f="paid">' +
+          '<button type="button" data-v="I" aria-pressed="' +
+          (r.paid === "I") +
+          '">Ikbal</button>' +
+          '<button type="button" data-v="S" aria-pressed="' +
+          (r.paid === "S") +
+          '">Sila</button></div></div>' +
+          '<div class="f-row"><div><label>Split</label><select data-f="split">' +
+          ["even", "ikbal", "sila", "custom"]
+            .map(
+              (v, i) =>
+                '<option value="' +
+                v +
+                '"' +
+                (r.split === v ? " selected" : "") +
+                ">" +
+                ["50 / 50", "Ikbal 100%", "Sila 100%", "Custom…"][i] +
+                "</option>"
+            )
+            .join("") +
+          "</select></div>" +
+          '<div class="' +
+          (r.split === "custom" ? "" : "hidden") +
+          '" data-pctwrap><label>Ikbal %</label>' +
+          '<input type="text" inputmode="decimal" data-f="pct" value="' +
+          pctVal +
+          '" /></div></div>' +
+          '<button class="btn-del" data-act="del">Delete entry</button>' +
+          "</div>"
+        );
+      }
+
+      /* =========================== add form =========================== */
+      let addPaid = "I";
+      const aDesc = $("#a-desc"),
+        aAmt = $("#a-amt"),
+        aSplit = $("#a-split"),
+        aPct = $("#a-pct");
+
+      $("#a-paid").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-v]");
+        if (!b) return;
+        addPaid = b.dataset.v;
+        [...$("#a-paid").children].forEach((c) =>
+          c.setAttribute("aria-pressed", String(c === b))
+        );
+      });
+
+      aSplit.addEventListener("change", () => {
+        aPct.classList.toggle("hidden", aSplit.value !== "custom");
+        if (aSplit.value === "custom" && !aPct.value) aPct.value = "50";
+      });
+
+      $("#add-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const dollars = parseAmount(aAmt.value);
+        if (!isFinite(dollars) || dollars === 0) {
+          aAmt.focus();
+          return;
+        }
+        let pct;
+        if (aSplit.value === "custom") {
+          const p = parseAmount(aPct.value);
+          pct = isFinite(p) ? Math.min(1, Math.max(0, p / 100)) : 0.5;
+        } else pct = PCT[aSplit.value];
+
+        const row = {
+          id: newId(),
+          date: today(),
+          desc: aDesc.value.trim(),
+          cents: toCents(Math.abs(dollars)),
+          paid: addPaid,
+          split: aSplit.value,
+          pct: pct,
+        };
+        state.rows.push(row);
+        pushOp({ type: "add", row: Object.assign({}, row) });
+        aDesc.value = "";
+        aAmt.value = "";
+        aDesc.blur();
+        aAmt.blur();
+        render();
+      });
+
+      /* =========================== row editing =========================== */
+      el.rows.addEventListener("click", (e) => {
+        const del = e.target.closest('[data-act="del"]');
+        if (del) {
+          const id = del.closest(".editor").dataset.id;
+          state.rows = state.rows.filter((r) => r.id !== id);
+          pushOp({ type: "del", id: id });
+          openId = null;
+          render();
+          return;
+        }
+        const seg = e.target.closest('.seg[data-f="paid"] button[data-v]');
+        if (seg) {
+          const id = seg.closest(".editor").dataset.id;
+          const r = state.rows.find((x) => x.id === id);
+          if (r) {
+            r.paid = seg.dataset.v;
+            pushOp({ type: "set", row: Object.assign({}, r) });
+            render();
+          }
+          return;
+        }
+        if (e.target.closest(".editor")) return;
+        const row = e.target.closest(".row[data-id]");
+        if (row) {
+          openId = openId === row.dataset.id ? null : row.dataset.id;
+          render();
+        }
+      });
+
+      function commitField(inp) {
+        const wrap = inp.closest(".editor");
+        if (!wrap) return;
+        const r = state.rows.find((x) => x.id === wrap.dataset.id);
+        if (!r) return;
+        const before = JSON.stringify(r);
+        const f = inp.dataset.f;
+        if (f === "desc") r.desc = inp.value.trim();
+        else if (f === "amt") {
+          const d = parseAmount(inp.value);
+          if (isFinite(d)) r.cents = toCents(Math.abs(d));
+        } else if (f === "date") {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(inp.value.trim())) r.date = inp.value.trim();
+        } else if (f === "pct") {
+          const p = parseAmount(inp.value);
+          if (isFinite(p)) r.pct = Math.min(1, Math.max(0, p / 100));
+        } else if (f === "split") {
+          r.split = inp.value;
+          if (r.split !== "custom") r.pct = PCT[r.split];
+          else if (r.pct === 0 || r.pct === 1) r.pct = 0.5;
+        }
+        if (JSON.stringify(r) === before) return; // nothing actually changed
+        pushOp({ type: "set", row: Object.assign({}, r) });
+        render();
+      }
+
+      el.rows.addEventListener("change", (e) => {
+        if (e.target.matches("[data-f]")) commitField(e.target);
+      });
+      el.rows.addEventListener(
+        "blur",
+        (e) => {
+          if (e.target.matches && e.target.matches("input[data-f]"))
+            commitField(e.target);
+        },
+        true
+      );
+
+      /* =========================== reset =========================== */
+      const resetMsg = $("#reset-msg");
+      function showReset(kind, text) {
+        resetMsg.className = "msg " + kind;
+        resetMsg.textContent = text;
+        resetMsg.classList.remove("hidden");
+      }
+      $("#reset-open").addEventListener("click", () => {
+        $("#reset-box").classList.remove("hidden");
+        resetMsg.classList.add("hidden");
+        $("#reset-pw").focus();
+      });
+      $("#reset-cancel").addEventListener("click", () => {
+        $("#reset-box").classList.add("hidden");
+        $("#reset-pw").value = "";
+        resetMsg.classList.add("hidden");
+      });
+      $("#reset-go").addEventListener("click", async () => {
+        const pw = $("#reset-pw");
+        if (pw.value !== RESET_PASSWORD) {
+          showReset("bad", "Wrong password.");
+          return;
+        }
+        const btn = $("#reset-go");
+        btn.disabled = true;
+        try {
+          await save(); // flush anything pending
+          if (state.rows.length) {
+            const now = new Date();
+            const stamp =
+              now.toISOString().slice(0, 10) +
+              "_" +
+              String(now.getHours()).padStart(2, "0") +
+              String(now.getMinutes()).padStart(2, "0");
+            const res = await putFile(
+              "archive/" + stamp + ".csv",
+              toCSV(state.rows),
+              null,
+              "alman archive " + stamp + " — " + balanceSentence()
+            );
+            if (!res.ok) throw new Error(await apiError(res));
+          }
+          const res2 = await putFile(
+            FILE,
+            HEADER + "\n",
+            state.sha,
+            "alman: reset ledger"
+          );
+          if (!res2.ok) throw new Error(await apiError(res2));
+          const j = await res2.json();
+          state.sha = j.content.sha;
+          state.rows = [];
+          state.pending = [];
+          openId = null;
+          render();
+          pw.value = "";
+          $("#reset-box").classList.add("hidden");
+          showReset("good", "Archived and reset.");
+        } catch (e) {
+          showReset("bad", e.message);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      /* =========================== settings / setup =========================== */
+      function showApp() {
+        el.setup.classList.toggle("hidden", !!token);
+        el.app.classList.toggle("hidden", !token);
+        $("#setup-repo").textContent = repo;
+      }
+
+      $("#gear").addEventListener("click", () => {
+        const s = el.settings;
+        const opening = s.classList.contains("hidden");
+        s.classList.toggle("hidden");
+        $("#set-msg").classList.add("hidden");
+        if (opening) {
+          $("#set-repo").value = repo;
+          $("#set-token").value = "";
+        }
+      });
+
+      $("#set-save").addEventListener("click", async () => {
+        const r = $("#set-repo").value.trim();
+        if (/^[\w.-]+\/[\w.-]+$/.test(r)) {
+          repo = r;
+          localStorage.setItem(LS_REPO, repo);
+        }
+        const t = $("#set-token").value.trim();
+        if (t) {
+          token = t;
+          localStorage.setItem(LS_TOKEN, token);
+        }
+        $("#set-token").value = "";
+        $("#set-msg").textContent = "Saved.";
+        $("#set-msg").className = "msg good";
+        $("#set-msg").classList.remove("hidden");
+        showApp();
+        await load();
+      });
+
+      $("#set-forget").addEventListener("click", () => {
+        localStorage.removeItem(LS_TOKEN);
+        token = "";
+        showApp();
+        el.settings.classList.add("hidden");
+      });
+
+      $("#set-download").addEventListener("click", () => {
+        const blob = new Blob([toCSV(state.rows)], {
+          type: "text/csv;charset=utf-8",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "alman_" + today() + ".csv";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      });
+
+      $("#setup-save").addEventListener("click", async () => {
+        const t = $("#setup-token").value.trim();
+        const msg = $("#setup-msg");
+        if (!t) {
+          msg.textContent = "Paste a token first.";
+          msg.classList.remove("hidden");
+          return;
+        }
+        token = t;
+        try {
+          await fetchFile();
+          localStorage.setItem(LS_TOKEN, token);
+          $("#setup-token").value = "";
+          msg.classList.add("hidden");
+          showApp();
+          await load();
+        } catch (e) {
+          token = "";
+          msg.textContent = e.message;
+          msg.classList.remove("hidden");
+        }
+      });
+
+      /* =========================== boot =========================== */
+      showApp();
+      render();
+      if (token) load();
+
+      const maybePoll = () => {
+        if (
+          document.visibilityState === "visible" &&
+          token &&
+          !state.saving &&
+          !state.pending.length &&
+          openId === null &&
+          !(document.activeElement && document.activeElement.matches("input,select"))
+        )
+          load(true);
+      };
+      setInterval(maybePoll, POLL_MS);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") maybePoll();
+      });
+      window.addEventListener("beforeunload", (e) => {
+        if (state.pending.length) {
+          save();
+          e.preventDefault();
+          e.returnValue = "";
+        }
+      });
+    </script>
+  </body>
+</html>
