@@ -644,7 +644,13 @@
 
       const newId = () =>
         Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const today = () => new Date().toISOString().slice(0, 10);
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+      function localDate(d) {
+        return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+      }
+      const today = () => localDate(new Date()); // local calendar day, not UTC
 
       const PCT = { even: 0.5, ikbal: 1, sila: 0 };
 
@@ -1218,14 +1224,14 @@
         const btn = $("#reset-go");
         btn.disabled = true;
         try {
-          await save(); // flush anything pending
+          // flush anything pending; save() no-ops while another save is in flight
+          await save();
+          while (state.saving) await new Promise((r) => setTimeout(r, 150));
+          if (state.pending.length) await save();
           if (state.rows.length) {
             const now = new Date();
             const stamp =
-              now.toISOString().slice(0, 10) +
-              "_" +
-              String(now.getHours()).padStart(2, "0") +
-              String(now.getMinutes()).padStart(2, "0");
+              localDate(now) + "_" + pad(now.getHours()) + pad(now.getMinutes());
             const res = await putFile(
               "archive/" + stamp + ".csv",
               toCSV(state.rows),
