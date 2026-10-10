@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How much computing? An estimator for LLM work on clinical notes</title>
+<meta name="description" content="Estimate GPU-hours, CPU-hours, tokens, wall-clock time and cloud cost for reading clinical notes with LLMs and training LLM prediction models.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='14' width='6' height='15' rx='1.5' fill='%232a78d6'/%3E%3Crect x='13' y='8' width='6' height='21' rx='1.5' fill='%23eb6834'/%3E%3Crect x='23' y='3' width='6' height='26' rx='1.5' fill='%231baf7a'/%3E%3C/svg%3E">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3ef;
+  --surface: #fcfcfb;
+  --raised: #ffffff;
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --muted: #7a7873;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.10);
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 24px rgba(11, 11, 11, 0.05);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+  --s1-wash: rgba(42, 120, 214, 0.10);
+  --rest: #b9b7ae;
+  --good: #0ca30c; --good-text: #006300; --warning: #fab219; --critical: #d03b3b;
+  --dec: #2a78d6; --inc: #e34948;
+  --track: #e6e4dd;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --raised: #20201f;
+  --ink: #ffffff;
+  --ink2: #c3c2b7;
+  --muted: #959389;
+  --grid: #2c2c2a;
+  --axis: #45453f;
+  --border: rgba(255, 255, 255, 0.10);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+  --s1-wash: rgba(57, 135, 229, 0.16);
+  --rest: #5d5c57;
+  --good-text: #0ca30c;
+  --dec: #3987e5; --inc: #e66767;
+  --track: #2c2c2a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--s1); }
+button, input, select { font: inherit; color: inherit; }
+.wrap { max-width: 1480px; margin: 0 auto; padding: 28px 28px 60px; }
+
+/* header */
+header.top { display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
+header.top h1 { font-size: 30px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.01em; }
+header.top p { margin: 0; color: var(--ink2); max-width: 760px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { border: 1px solid var(--border); background: var(--raised); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-size: 14px; }
+.btn:hover { background: var(--s1-wash); }
+.btn.primary { background: var(--s1); color: #fff; border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.08); }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 20px; }
+.presets .lab { color: var(--muted); font-size: 13px; margin-right: 4px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 3px; background: var(--raised); }
+.seg button { border: 0; background: transparent; border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 13.5px; color: var(--ink2); }
+.seg button[aria-pressed="true"] { background: var(--s1); color: #fff; }
+
+/* layout */
+.layout { display: grid; grid-template-columns: 410px minmax(0, 1fr); gap: 22px; align-items: start; }
+.controls { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+.results { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; min-width: 0; }
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .controls { position: static; max-height: none; overflow: visible; padding-right: 0; }
+}
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 18px 20px; }
+.card h2 { font-size: 17px; margin: 0 0 4px; }
+.card .sub { color: var(--ink2); font-size: 13.5px; margin: 0 0 12px; }
+.controls .card { margin-bottom: 14px; padding: 14px 16px; }
+.controls h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+
+/* fields */
+.field { margin: 10px 0 12px; }
+.field[hidden] { display: none; }
+.field .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.field label { font-size: 13.5px; color: var(--ink); }
+.field .val { width: 92px; text-align: right; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 1px 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.field .val:hover, .field .val:focus { border-color: var(--border); background: var(--raised); outline: none; }
+.field .help { color: var(--muted); font-size: 12.5px; margin-top: 2px; line-height: 1.4; }
+.field select { width: 100%; margin-top: 4px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--raised); font-size: 13.5px; }
+input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--s1); height: 18px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; margin: 8px 0; cursor: pointer; }
+.check input { accent-color: var(--s1); width: 16px; height: 16px; }
+
+/* project cards */
+.proj-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.proj-head .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--ink2); flex: none; }
+.proj-head input { flex: 1; font-weight: 650; font-size: 15px; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 3px 6px; margin-left: -6px; min-width: 0; }
+.proj-head input:hover, .proj-head input:focus { border-color: var(--border); outline: none; background: var(--raised); }
+.icon-btn { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 6px; border-radius: 6px; }
+.icon-btn:hover { background: var(--s1-wash); color: var(--ink); }
+.proj-total { color: var(--ink2); font-size: 12.5px; margin: 0 0 6px; }
+details.stage { border-top: 1px solid var(--border); padding: 8px 0 2px; }
+details.stage > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; padding: 2px 0; }
+details.stage > summary::-webkit-details-marker { display: none; }
+details.stage > summary .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+details.stage > summary .tag { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 12.5px; }
+details.stage > summary .chev { color: var(--muted); transition: transform .15s; font-size: 11px; }
+details.stage[open] > summary .chev { transform: rotate(90deg); }
+details.stage .body { padding: 2px 0 6px 19px; }
+.switch { position: relative; width: 30px; height: 18px; flex: none; }
+.switch input { opacity: 0; width: 100%; height: 100%; position: absolute; margin: 0; cursor: pointer; z-index: 1; }
+.switch span { position: absolute; inset: 0; background: var(--axis); border-radius: 999px; transition: background .15s; }
+.switch span::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: transform .15s; }
+.switch input:checked + span { background: var(--s1); }
+.switch input:checked + span::after { transform: translateX(12px); }
+.switch input:focus-visible + span { outline: 2px solid var(--s1); outline-offset: 2px; }
+.off-note { color: var(--muted); font-size: 12.5px; margin: 0 0 6px; }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: minmax(0, 1.35fr) repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1250px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpis .hero { grid-column: 1 / -1; } }
+@media (max-width: 600px) { .wrap { padding: 18px 14px 40px; } header.top h1 { font-size: 25px; } .tile .v { font-size: 25px; } .tile.hero .v { font-size: 44px; } .card { padding: 16px 14px; } }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 16px 18px; min-width: 0; }
+.tile .k { color: var(--ink2); font-size: 13px; }
+.tile .v { font-size: 30px; font-weight: 650; line-height: 1.15; margin: 6px 0 4px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.tile.hero .v { font-size: 50px; }
+.tile .d { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.tile .d b { color: var(--ink2); font-weight: 600; }
+.warnline { display: flex; gap: 6px; align-items: flex-start; color: var(--ink2); font-size: 12.5px; margin-top: 6px; }
+.badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: 700; color: #fff; flex: none; margin-top: 1px; }
+.badge.good { background: var(--good); } .badge.warn { background: var(--warning); color: #3a2a00; } .badge.bad { background: var(--critical); }
+
+/* charts */
+.chart svg, .card svg { display: block; width: 100%; max-width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 10px; font-size: 13px; color: var(--ink2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+svg text { fill: var(--ink2); font-size: 12px; }
+svg .t-ink { fill: var(--ink); }
+svg .t-muted { fill: var(--muted); }
+svg .t-strong { fill: var(--ink); font-weight: 600; }
+svg .grid { stroke: var(--grid); stroke-width: 1; }
+svg .axis { stroke: var(--axis); stroke-width: 1; }
+svg [data-tip] { cursor: default; }
+svg [data-tip]:focus { outline: none; }
+svg [data-tip]:focus-visible { stroke: var(--ink); stroke-width: 1.5; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 1250px) { .two { grid-template-columns: 1fr; } }
+.tip { position: fixed; z-index: 50; pointer-events: none; background: var(--raised); color: var(--ink); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 10px; padding: 8px 11px; font-size: 13px; line-height: 1.45; max-width: 300px; opacity: 0; transition: opacity .08s; }
+.tip b { font-weight: 650; }
+.tip .m { color: var(--muted); }
+
+/* token panel */
+.tok-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 1250px) { .tok-grid { grid-template-columns: 1fr; } }
+.facts { display: grid; gap: 12px; }
+.fact { display: flex; gap: 12px; align-items: baseline; }
+.fact .n { font-size: 22px; font-weight: 650; min-width: 112px; }
+.fact .t { color: var(--ink2); font-size: 13.5px; }
+
+/* tables */
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 12.5px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+.fit { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.src { display: inline-block; font-size: 11.5px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink2); white-space: nowrap; }
+.src.measured { border-color: var(--good); color: var(--good-text); }
+.assume-in { width: 110px; text-align: right; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--raised); font-variant-numeric: tabular-nums; }
+.note { color: var(--muted); font-size: 12.5px; }
+footer { margin-top: 26px; color: var(--muted); font-size: 12.5px; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--page); padding: 8px 16px; border-radius: 999px; font-size: 13.5px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+@media print {
+  .controls, .toolbar, .presets { display: none; }
+  .layout { grid-template-columns: 1fr; }
+  .card, .tile { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>How much computing does it take?</h1>
+      <p>This page estimates the GPU time, CPU time and volume of text involved when LLMs read clinical notes and when LLM prediction models are trained on patient résumés. Move any slider and the totals update. The defaults are round numbers, not the figures of a particular cohort, so type in your own.</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn" id="copyLink" title="Copy a link that reopens this exact scenario">Copy link to this scenario</button>
+      <button class="btn" id="themeBtn" title="Switch between light and dark">Dark</button>
+    </div>
+  </header>
+
+  <div class="presets">
+    <span class="lab">Start from</span>
+    <button class="btn" data-preset="pilot">One project</button>
+    <button class="btn" data-preset="planning">Planning year, five projects</button>
+    <button class="btn" data-preset="lean">Lean pilot</button>
+    <span class="lab" style="margin-left:14px">Speeds from</span>
+    <span class="seg" id="speedSeg">
+      <button data-speeds="pilot">Pilot runs</button>
+      <button data-speeds="planning">Planning report</button>
+    </span>
+  </div>
+
+  <div class="layout">
+    <aside class="controls" id="controls" aria-label="Inputs"></aside>
+    <main class="results">
+      <section class="kpis" id="kpis" aria-live="polite"></section>
+
+      <section class="card chart">
+        <h2>Where the GPU-hours go</h2>
+        <p class="sub" id="stackSub"></p>
+        <div class="legend" id="stackLegend"></div>
+        <div id="stackChart"></div>
+      </section>
+
+      <section class="card chart">
+        <h2>How long it would take</h2>
+        <p class="sub">Calendar time to finish everything, by hardware. Randi jobs wait in a shared queue; a Spark runs only our jobs. The whisker on Spark rows shows the range of published Spark speeds.</p>
+        <div id="timeChart"></div>
+        <div id="timeNotes"></div>
+      </section>
+
+      <section class="card">
+        <h2>How much text that is</h2>
+        <p class="sub" id="tokSub"></p>
+        <div class="tok-grid">
+          <div>
+            <div id="books"></div>
+            <div id="stack" style="margin-top:14px"></div>
+          </div>
+          <div class="facts" id="tokFacts"></div>
+        </div>
+      </section>
+
+      <section class="card">
+          <h2>What fits where</h2>
+          <p class="sub">GPUs one job needs, from the model's memory footprint. Memory per GPU: H200 141 GB, A100 40 GB, Spark 128 GB shared with its CPU.</p>
+          <div class="field" style="margin-top:0"><select id="fitModel" aria-label="Model for the fit table"></select></div>
+          <div class="tablewrap" id="fitTable"></div>
+        </section>
+        <section class="card chart">
+          <h2>Which inputs move the total</h2>
+          <p class="sub">How far the total moves when one input is halved or raised by half, all else fixed. Halving a speed adds hours, so speed bars point the other way.</p>
+          <div id="tornado"></div>
+        </section>
+
+      <section class="card">
+        <h2>Breakdown</h2>
+        <p class="sub">Every job the estimate contains, in H200-equivalent hours before the extra-time allowance.</p>
+        <div class="tablewrap" id="breakdown"></div>
+      </section>
+
+      <section class="card">
+        <h2>Assumptions and where they come from</h2>
+        <p class="sub">Every speed and price is editable. <span class="src measured">measured</span> values come from completed jobs; <span class="src">derived</span> ones are computed from measured jobs with a stated assumption; <span class="src">planning</span> values are the assumptions of our budget report; <span class="src">published</span> values come from vendor specifications or public benchmarks; a <span class="src">rule of thumb</span> is a judgement call.</p>
+        <div class="tablewrap" id="assumeTable"></div>
+      </section>
+    </main>
+  </div>
+  <footer>
+    Speeds are per GPU and assume the jobs are written for batched inference (vLLM) and standard fine-tuning libraries. Times scale linearly with tokens, which is the main simplification. October 2026.
+  </footer>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<script id="model">
+// The estimating model. Pure functions only, so the tests can load this block on its own.
+const CE = (function () {
+  const GPUS = {
+    h200:  { label: 'H200', mem: 141, inventory: 8 },
+    a100:  { label: 'A100 40 GB', mem: 40, inventory: 40 },
+    spark: { label: 'DGX Spark', mem: 128 },
+  };
+
+  const MODELS = {
+    m4:    { label: 'MedGemma 4B', total: 4, active: 4 },
+    g12:   { label: 'Gemma 12B', total: 12, active: 12 },
+    oss20: { label: 'gpt-oss 20B (mixture of experts)', total: 21, active: 3.6 },
+    m27:   { label: '27B (MedGemma 27B, Qwen 27B)', total: 27, active: 27 },
+    l70:   { label: 'Llama 70B', total: 70, active: 70 },
+  };
+
+  const METHODS = {
+    zeroshot: 'Zero-shot (no training)',
+    qlora: 'QLoRA (small added weights, compressed base)',
+    lora: 'LoRA (small added weights)',
+    full: 'Full fine-tune (every weight)',
+  };
+
+  const PRECISIONS = { bf16: 'Full precision (bf16)', fp8: '8-bit', int4: '4-bit' };
+
+  // passes = times the training set is read in one comparison; fits = models trained per comparison
+  const SCHEDULES = {
+    '1': { passes: 1, fits: 1, label: '1 epoch' },
+    '2': { passes: 2, fits: 1, label: '2 epochs' },
+    '3': { passes: 3, fits: 1, label: '3 epochs' },
+    '5': { passes: 5, fits: 1, label: '5 epochs' },
+    '3+5': { passes: 8, fits: 2, label: 'Two fits, 3 and 5 epochs' },
+  };
+
+  const STAGES = [
+    { key: 'reading', label: 'Note reading', color: 'var(--s1)' },
+    { key: 'resume', label: 'Résumé writing', color: 'var(--s2)' },
+    { key: 'writer', label: 'Writer fine-tuning', color: 'var(--s3)' },
+    { key: 'train', label: 'Prediction training', color: 'var(--s4)' },
+    { key: 'score', label: 'Scoring and evaluation', color: 'var(--s5)' },
+  ];
+
+  // Speeds are for a 27B model on one H200 and are rescaled for other models and GPUs.
+  const SPEED_SETS = {
+    planning: {
+      readRate: 28e6, outWeight: 0, qloraRate: 1e6, loraVsQlora: 1, fullVsQlora: 0.5,
+      multiGpuEff: 1, resumesPerHour: 50, resumeRefIn: 16384, resumeRefOut: 1800,
+    },
+    pilot: {
+      readRate: 16e6, outWeight: 4, qloraRate: 3e6, loraVsQlora: 1.25, fullVsQlora: 0.75,
+      multiGpuEff: 0.85, resumesPerHour: 300, resumeRefIn: 5149, resumeRefOut: 245,
+    },
+  };
+
+  const BASE_ASSUME = {
+    a100Speed: 0.33, sparkSpeed: 0.12, sparkLow: 0.06, sparkHigh: 0.25,
+    sizeExp: 0.85, detailedMult: 3,
+    bytes: { bf16: 2, fp8: 1, int4: 0.55, qlora: 0.6, lora: 2, full: 18 },
+    h200Price: 4.39, a100Price: 1.99, sparkPrice: 4699, coresPerGpu: 8,
+  };
+
+  function assumptionsFor(speeds) {
+    return Object.assign(JSON.parse(JSON.stringify(BASE_ASSUME)), SPEED_SETS[speeds]);
+  }
+
+  // GB one job needs: weights plus room for the KV cache, activations and adapters
+  function memNeed(model, kind, A) {
+    const P = MODELS[model].total;
+    if (kind === 'bf16' || kind === 'fp8' || kind === 'int4') return P * A.bytes[kind] * 1.3 + 2;
+    if (kind === 'full') return P * A.bytes.full * 1.1 + 4;
+    return P * A.bytes[kind] * 1.3 + 4;
+  }
+
+  // How a job sits on one kind of hardware: GPUs per job, whether we can get them, and speed.
+  function placement(memGB, kind, S, A, sparkSpeed) {
+    if (kind === 'spark') {
+      const k = Math.ceil(memGB / GPUS.spark.mem);
+      const cap = S.hw.sparkUnits;
+      const eff = k > 1 ? A.multiGpuEff : 1;
+      const slots = Math.floor(cap / k) * k;
+      return { k, cap, ok: k <= cap, eff, speed: sparkSpeed, rate: slots * sparkSpeed * eff * S.hw.sparkUptime };
+    }
+    const g = GPUS[kind];
+    const k = Math.ceil(memGB / g.mem);
+    const cap = Math.min(S.hw.randiGpus, g.inventory);
+    const speed = kind === 'a100' ? A.a100Speed : 1;
+    const eff = k > 1 ? A.multiGpuEff : 1;
+    const slots = Math.floor(cap / k) * k;
+    return { k, cap, inventory: g.inventory, ok: k <= cap, eff, speed, rate: slots * speed * eff * S.hw.duty };
+  }
+
+  function buildJobs(S) {
+    const A = S.assume;
+    const sc = (n) => (S.scale && S.scale[n] != null ? S.scale[n] : 1);
+    const sizeF = (m) => Math.pow(27 / MODELS[m].active, A.sizeExp);
+    const methodF = (m) => (m === 'lora' ? A.loraVsQlora : m === 'full' ? A.fullVsQlora : 1);
+    const readRate = A.readRate * sc('readRate');
+    const trainRate = A.qloraRate * sc('trainRate');
+    const jobs = [];
+    let cpuOnly = 0;
+
+    for (const p of S.projects) {
+      const r = p.reading;
+      if (r.on) {
+        const passes = (r.simple + r.detailed * A.detailedMult) * sc('passes');
+        const notes = r.notes * sc('notes');
+        const tokIn = notes * r.tokensPerNote * sc('tokensPerNote') * (1 + r.overhead) * passes * r.readers * sc('readers');
+        const tokOut = notes * r.outPerNote * passes * r.readers * sc('readers');
+        const base = (tokIn + A.outWeight * tokOut) / (readRate * sizeF(r.model));
+        jobs.push({ pid: p.id, pname: p.name, stage: 'reading', label: 'Read notes', model: r.model,
+          kind: r.precision, mem: memNeed(r.model, r.precision, A), tokIn, tokOut, tokTrain: 0, base });
+        cpuOnly += notes * passes * 0.003 / 3600; // term matching before the LLM, about 3 ms a note
+      }
+
+      const w = p.resume;
+      if (w.mode === 'llm') {
+        const n = w.records * w.versions * sc('records');
+        const ref = A.resumeRefIn + A.outWeight * A.resumeRefOut;
+        const lengthF = (w.inTokens + A.outWeight * w.outTokens) / ref;
+        const base = n * lengthF / (A.resumesPerHour * sc('resumeRate') * sizeF(w.model));
+        jobs.push({ pid: p.id, pname: p.name, stage: 'resume', label: 'Write résumés', model: w.model,
+          kind: 'bf16', mem: memNeed(w.model, 'bf16', A), tokIn: n * w.inTokens, tokOut: n * w.outTokens, tokTrain: 0, base });
+        if (w.ft.on) {
+          const tokTrain = w.ft.pairs * w.ft.tokens * w.ft.epochs * w.ft.fits;
+          const base2 = tokTrain / (trainRate * sizeF(w.model) * methodF(w.ft.method));
+          jobs.push({ pid: p.id, pname: p.name, stage: 'writer', label: 'Fine-tune the writer', model: w.model,
+            kind: w.ft.method, mem: memNeed(w.model, w.ft.method, A), tokIn: 0, tokOut: 0, tokTrain, base: base2 });
+        }
+      } else if (w.mode === 'template') {
+        cpuOnly += w.records * w.versions * 0.05 / 3600;
+      }
+
+      const q = p.predict;
+      if (q.on) {
+        const sch = SCHEDULES[q.schedule];
+        const comparisons = q.baseModels * q.versions * q.splits * sc('comparisons');
+        const trains = q.method !== 'zeroshot';
+        const fits = comparisons * (trains ? sch.fits : 1);
+        const tpe = q.tokensPerExample * sc('tokensPerExample');
+        let qloraEq = 0;
+        if (trains) {
+          const tokTrain = q.examples * sc('examples') * tpe * sch.passes * sc('epochs') * comparisons;
+          qloraEq = tokTrain / (trainRate * sizeF(q.model));
+          jobs.push({ pid: p.id, pname: p.name, stage: 'train', label: 'Train prediction models', model: q.model,
+            kind: q.method, mem: memNeed(q.model, q.method, A), tokIn: 0, tokOut: 0, tokTrain, base: qloraEq / methodF(q.method) });
+        }
+        const tokIn = q.testRecords * tpe * fits;
+        const tokOut = q.testRecords * q.outTokens * fits;
+        const base = (tokIn + A.outWeight * tokOut) / (readRate * sizeF(q.model)) + q.allowance * qloraEq;
+        jobs.push({ pid: p.id, pname: p.name, stage: 'score', label: 'Score and evaluate', model: q.model,
+          kind: 'bf16', mem: memNeed(q.model, 'bf16', A), tokIn, tokOut, tokTrain: 0, base });
+      }
+      cpuOnly += p.cpuCoreHours;
+    }
+    return { jobs, cpuOnly };
+  }
+
+  function evalSetup(jobs, setup, S, A, sparkSpeed) {
+    const c = S.contingency * (S.scale && S.scale.contingency != null ? S.scale.contingency : 1);
+    const gpuH = { h200: 0, a100: 0, spark: 0 };
+    let wall = 0;
+    const blockers = [];
+    for (const j of jobs) {
+      if (j.base <= 0) continue;
+      if (setup === 'combo') {
+        const ph = placement(j.mem, 'h200', S, A, sparkSpeed);
+        const ps = placement(j.mem, 'spark', S, A, sparkSpeed);
+        const rh = ph.ok ? ph.rate : 0;
+        const rs = ps.ok ? ps.rate : 0;
+        if (rh + rs <= 0) { blockers.push({ job: j, need: ph.k, kind: 'h200' }); continue; }
+        const t = j.base / (rh + rs);
+        wall += t;
+        if (rh > 0) gpuH.h200 += (j.base * rh / (rh + rs)) / (ph.speed * ph.eff);
+        if (rs > 0) gpuH.spark += (j.base * rs / (rh + rs)) / (ps.speed * ps.eff);
+      } else {
+        const pl = placement(j.mem, setup, S, A, sparkSpeed);
+        if (!pl.ok || pl.rate <= 0) { blockers.push({ job: j, need: pl.k, kind: setup, inventory: pl.inventory }); continue; }
+        gpuH[setup] += j.base / (pl.speed * pl.eff);
+        wall += j.base / pl.rate;
+      }
+    }
+    for (const k in gpuH) gpuH[k] *= 1 + c;
+    wall *= 1 + c;
+    const randiHours = gpuH.h200 + gpuH.a100;
+    let cost;
+    if (setup === 'h200') cost = { cloud: gpuH.h200 * A.h200Price, spark: 0 };
+    else if (setup === 'a100') cost = { cloud: gpuH.a100 * A.a100Price, spark: 0 };
+    else if (setup === 'spark') cost = { cloud: 0, spark: S.hw.sparkUnits * A.sparkPrice };
+    else cost = { cloud: gpuH.h200 * A.h200Price, spark: S.hw.sparkUnits * A.sparkPrice };
+    return { setup, gpuH, randiHours, wall, blockers, ok: blockers.length === 0, cost };
+  }
+
+  function estimate(S) {
+    const A = S.assume;
+    const { jobs, cpuOnly } = buildJobs(S);
+    const c = S.contingency * (S.scale && S.scale.contingency != null ? S.scale.contingency : 1);
+
+    // H200-equivalent hours, including the multi-GPU penalty a job pays on H200s
+    for (const j of jobs) {
+      const k = Math.ceil(j.mem / GPUS.h200.mem);
+      j.kH200 = k;
+      j.h200 = j.base / (k > 1 ? A.multiGpuEff : 1);
+    }
+    const byStage = {};
+    for (const s of STAGES) byStage[s.key] = 0;
+    for (const j of jobs) byStage[j.stage] += j.h200;
+    const workH200 = jobs.reduce((a, j) => a + j.h200, 0);
+    const extraH200 = workH200 * c;
+    const totalH200 = workH200 + extraH200;
+
+    const setups = {};
+    for (const s of ['h200', 'a100', 'spark', 'combo']) setups[s] = evalSetup(jobs, s, S, A, A.sparkSpeed);
+    for (const s of ['spark', 'combo']) {
+      setups[s].wallFast = evalSetup(jobs, s, S, A, A.sparkHigh).wall;
+      setups[s].wallSlow = evalSetup(jobs, s, S, A, A.sparkLow).wall;
+    }
+
+    const tokens = { in: 0, out: 0, train: 0 };
+    for (const j of jobs) { tokens.in += j.tokIn; tokens.out += j.tokOut; tokens.train += j.tokTrain; }
+    tokens.read = tokens.in + tokens.out;
+    tokens.total = tokens.read + tokens.train;
+
+    const sel = setups[S.hw.setup];
+    const cpu = { support: sel.randiHours * A.coresPerGpu, only: cpuOnly };
+    cpu.total = cpu.support + cpu.only;
+
+    const perProject = S.projects.map((p) => {
+      const mine = jobs.filter((j) => j.pid === p.id);
+      const st = {};
+      for (const s of STAGES) st[s.key] = 0;
+      for (const j of mine) st[j.stage] += j.h200;
+      return { id: p.id, name: p.name, byStage: st, total: mine.reduce((a, j) => a + j.h200, 0) };
+    });
+
+    return { jobs, byStage, workH200, extraH200, totalH200, setups, tokens, cpu, perProject, contingency: c };
+  }
+
+  const TORNADO_KEYS = [
+    { key: 'notes', label: 'Number of notes' },
+    { key: 'passes', label: 'Readings of the notes' },
+    { key: 'tokensPerNote', label: 'Tokens per note' },
+    { key: 'readers', label: 'Reader models' },
+    { key: 'readRate', label: 'Reading speed' },
+    { key: 'records', label: 'Résumés written' },
+    { key: 'resumeRate', label: 'Résumé-writing speed' },
+    { key: 'examples', label: 'Training examples' },
+    { key: 'tokensPerExample', label: 'Tokens per résumé' },
+    { key: 'epochs', label: 'Epochs' },
+    { key: 'comparisons', label: 'Model comparisons' },
+    { key: 'trainRate', label: 'Training speed' },
+    { key: 'contingency', label: 'Extra-time allowance' },
+  ];
+
+  function tornado(S) {
+    const base = estimate(S).totalH200;
+    const rows = [];
+    for (const t of TORNADO_KEYS) {
+      const lo = estimate(Object.assign({}, S, { scale: { [t.key]: 0.5 } })).totalH200;
+      const hi = estimate(Object.assign({}, S, { scale: { [t.key]: 1.5 } })).totalH200;
+      if (Math.abs(hi - lo) < base * 1e-3) continue;
+      rows.push({ key: t.key, label: t.label, lo: lo - base, hi: hi - base, swing: Math.abs(hi - lo) });
+    }
+    rows.sort((a, b) => b.swing - a.swing);
+    return { base, rows };
+  }
+
+  // ---------- presets: round, generic numbers ----------
+  let nextId = 1;
+  function project(name, o) {
+    const p = {
+      id: nextId++, name,
+      reading: { on: true, notes: 400000, tokensPerNote: 1050, overhead: 0.3, outPerNote: 60,
+        simple: 1, detailed: 0, readers: 2, model: 'm27', precision: 'bf16' },
+      resume: { mode: 'template', records: 20000, versions: 1, model: 'm27', inTokens: 5000, outTokens: 300,
+        ft: { on: false, method: 'qlora', pairs: 5000, tokens: 8000, epochs: 3, fits: 2 } },
+      predict: { on: true, model: 'm27', method: 'qlora', examples: 16000, tokensPerExample: 2048,
+        schedule: '2', baseModels: 2, versions: 1, splits: 3, testRecords: 4000, outTokens: 1, allowance: 0.25 },
+      cpuCoreHours: 2000,
+    };
+    return deepMerge(p, o || {});
+  }
+
+  function deepMerge(a, b) {
+    for (const k in b) {
+      if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) a[k] = deepMerge(a[k] || {}, b[k]);
+      else a[k] = b[k];
+    }
+    return a;
+  }
+
+  function baseState(speeds) {
+    return {
+      v: 1, speeds, assume: assumptionsFor(speeds), contingency: 0.3,
+      hw: { setup: 'h200', randiGpus: 4, duty: 0.6, sparkUnits: 1, sparkUptime: 0.9 },
+      projects: [],
+    };
+  }
+
+  const PRESETS = {
+    pilot() {
+      const S = baseState('pilot');
+      S.projects.push(project('Project A'));
+      return S;
+    },
+    planning() {
+      const S = baseState('planning');
+      S.projects.push(project('Note collection, shared', {
+        reading: { notes: 30000000, tokensPerNote: 1100, overhead: 0.5, outPerNote: 150, simple: 8, detailed: 2, readers: 1 },
+        resume: { mode: 'none' }, predict: { on: false }, cpuCoreHours: 50000,
+      }));
+      for (const L of ['A', 'B', 'C', 'D', 'E']) {
+        S.projects.push(project('Project ' + L, {
+          reading: { on: false },
+          resume: { mode: 'llm', records: 30000, versions: 2, inTokens: 16384, outTokens: 1800,
+            ft: { on: true, method: 'qlora', pairs: 5000, tokens: 18432, epochs: 3, fits: 4 } },
+          predict: { examples: 25000, schedule: '3+5', baseModels: 2, versions: 2, splits: 3, testRecords: 5000 },
+          cpuCoreHours: 0,
+        }));
+      }
+      return S;
+    },
+    lean() {
+      const S = baseState('pilot');
+      S.projects.push(project('Project A', {
+        reading: { readers: 1, model: 'g12' },
+        resume: { mode: 'template' },
+        predict: { model: 'm4', method: 'qlora', schedule: '2', baseModels: 1, splits: 1 },
+        cpuCoreHours: 500,
+      }));
+      return S;
+    },
+  };
+
+  function newProject(name) { return project(name); }
+  function setNextId(n) { nextId = Math.max(nextId, n); }
+
+  return { GPUS, MODELS, METHODS, PRECISIONS, SCHEDULES, STAGES, SPEED_SETS, BASE_ASSUME,
+    assumptionsFor, memNeed, placement, estimate, tornado, PRESETS, newProject, setNextId };
+})();
+if (typeof globalThis !== 'undefined') globalThis.CE = CE;
+</script>
+
+<script id="ui">
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  function el(tag, attrs, ...kids) {
+    const n = document.createElement(tag);
+    for (const k in attrs || {}) {
+      if (k === 'class') n.className = attrs[k];
+      else if (k === 'html') n.innerHTML = attrs[k];
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+      else if (attrs[k] !== false && attrs[k] != null) n.setAttribute(k, attrs[k]);
+    }
+    for (const c of kids.flat()) if (c != null) n.append(c.nodeType ? c : document.createTextNode(c));
+    return n;
+  }
+  function sv(tag, attrs, ...kids) {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const k in attrs || {}) if (attrs[k] != null) n.setAttribute(k, attrs[k]);
+    for (const c of kids.flat()) if (c != null) n.append(c.nodeType ? c : document.createTextNode(c));
+    return n;
+  }
+
+  // ---------- number formatting ----------
+  function compact(x, digits) {
+    const d = digits == null ? 1 : digits;
+    const a = Math.abs(x);
+    if (a >= 1e12) return trim((x / 1e12).toFixed(d)) + 'T';
+    if (a >= 1e9) return trim((x / 1e9).toFixed(d)) + 'B';
+    if (a >= 1e6) return trim((x / 1e6).toFixed(d)) + 'M';
+    if (a >= 1e4) return trim((x / 1e3).toFixed(0)) + 'k';
+    if (a >= 1e3) return trim((x / 1e3).toFixed(1)) + 'k';
+    if (a >= 10 || a === 0) return Math.round(x).toString();
+    return trim(x.toFixed(1));
+  }
+  function trim(s) { return s.replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1'); }
+  function words(x) {
+    const a = Math.abs(x);
+    if (a >= 1e12) return trim((x / 1e12).toFixed(1)) + ' trillion';
+    if (a >= 1e9) return trim((x / 1e9).toFixed(1)) + ' billion';
+    if (a >= 1e6) return trim((x / 1e6).toFixed(1)) + ' million';
+    return Math.round(x).toLocaleString('en-US');
+  }
+  function hoursFmt(h) {
+    if (h >= 1e6) return compact(h) ;
+    return Math.round(h).toLocaleString('en-US');
+  }
+  function money(x) {
+    if (x >= 1e6) return '$' + trim((x / 1e6).toFixed(1)) + 'M';
+    if (x >= 1e5) return '$' + Math.round(x / 1e3) + 'k';
+    return '$' + Math.round(x).toLocaleString('en-US');
+  }
+  function duration(h) {
+    if (!isFinite(h)) return 'n/a';
+    if (h < 1) return Math.max(1, Math.round(h * 60)) + ' min';
+    if (h < 48) return trim(h.toFixed(h < 10 ? 1 : 0)) + ' hours';
+    const d = h / 24;
+    if (d < 70) return Math.round(d) + ' days';
+    if (d < 730) return trim((d / 30.44).toFixed(1)) + ' months';
+    return trim((d / 365.25).toFixed(1)) + ' years';
+  }
+  function parseNum(s) {
+    const m = String(s).trim().toLowerCase().replace(/[, $%]/g, '').match(/^(-?[\d.]+)([kmbt]?)$/);
+    if (!m) return NaN;
+    const mult = { '': 1, k: 1e3, m: 1e6, b: 1e9, t: 1e12 }[m[2]];
+    return parseFloat(m[1]) * mult;
+  }
+
+  // ---------- state ----------
+  let S = null;
+  function load() {
+    const m = location.hash.match(/s=([^&]+)/);
+    if (m) {
+      try {
+        const st = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+        if (st && st.v === 1 && Array.isArray(st.projects)) {
+          CE.setNextId(1 + Math.max(0, ...st.projects.map((p) => p.id)));
+          const fresh = CE.assumptionsFor(st.speeds || 'pilot');
+          st.assume = Object.assign(fresh, st.assume || {});
+          return st;
+        }
+      } catch (e) { /* fall back to the preset */ }
+    }
+    return CE.PRESETS.pilot();
+  }
+  function encodeState() {
+    const def = CE.assumptionsFor(S.speeds);
+    const diff = {};
+    for (const k in S.assume) if (JSON.stringify(S.assume[k]) !== JSON.stringify(def[k])) diff[k] = S.assume[k];
+    const slim = Object.assign({}, S, { assume: diff, projects: S.projects.map((p) => Object.assign({}, p, { _open: undefined })) });
+    return btoa(unescape(encodeURIComponent(JSON.stringify(slim)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  let saveTimer = null;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { history.replaceState(null, '', '#s=' + encodeState()); }, 250);
+  }
+  function getPath(o, path) { return path.split('.').reduce((a, k) => (a == null ? a : a[k]), o); }
+  function setPath(o, path, v) {
+    const ks = path.split('.');
+    let a = o;
+    for (let i = 0; i < ks.length - 1; i++) a = a[ks[i]];
+    a[ks[ks.length - 1]] = v;
+  }
+
+  // ---------- controls ----------
+  const modelOpts = () => Object.entries(CE.MODELS).map(([k, m]) => [k, m.label]);
+  const methodOpts = (withZero) => Object.entries(CE.METHODS).filter(([k]) => withZero || k !== 'zeroshot');
+
+  function sliderField(obj, f) {
+    const v0 = getPath(obj, f.path);
+    const toT = (v) => {
+      if (f.log) {
+        if (f.zero && v <= 0) return 0;
+        const lo = f.zero ? f.min : f.min;
+        return Math.round(1000 * Math.log(Math.max(v, lo) / lo) / Math.log(f.max / lo));
+      }
+      return v;
+    };
+    const fromT = (t) => {
+      if (f.log) {
+        if (f.zero && t <= 0) return 0;
+        const raw = f.min * Math.pow(f.max / f.min, t / 1000);
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)) - 1);
+        return Math.round(raw / mag) * mag;
+      }
+      return t;
+    };
+    const show = (v) => (f.fmt ? f.fmt(v) : compact(v));
+    const range = el('input', { type: 'range', min: f.log ? 0 : f.min, max: f.log ? 1000 : f.max, step: f.log ? 1 : (f.step || 1),
+      value: toT(v0), 'aria-label': f.label });
+    const box = el('input', { class: 'val', value: show(v0), 'aria-label': f.label + ' value', inputmode: 'decimal' });
+    range.addEventListener('input', () => {
+      const v = fromT(+range.value);
+      setPath(obj, f.path, f.toState ? f.toState(v) : v);
+      box.value = show(v);
+      changed();
+    });
+    box.addEventListener('change', () => {
+      let v = parseNum(box.value);
+      if (f.pct) v = v / 100;
+      if (isNaN(v)) { box.value = show(getPath(obj, f.path)); return; }
+      v = Math.max(f.zero ? 0 : f.min, Math.min(f.hardMax || f.max * 100, v));
+      if (f.int) v = Math.round(v);
+      setPath(obj, f.path, v);
+      range.value = toT(v);
+      box.value = show(v);
+      changed();
+    });
+    return el('div', { class: 'field' },
+      el('div', { class: 'row' }, el('label', null, f.label), box),
+      range,
+      f.help ? el('div', { class: 'help' }, f.help) : null);
+  }
+
+  function selectField(obj, f, onChange) {
+    const s = el('select', { 'aria-label': f.label });
+    for (const [k, lab] of f.options) s.append(el('option', { value: k, selected: getPath(obj, f.path) === k ? 'selected' : false }, lab));
+    s.addEventListener('change', () => { setPath(obj, f.path, s.value); if (onChange) onChange(); changed(); });
+    return el('div', { class: 'field' }, el('label', null, f.label), s, f.help ? el('div', { class: 'help' }, f.help) : null);
+  }
+
+  function checkField(obj, path, label, onChange) {
+    const c = el('input', { type: 'checkbox', checked: getPath(obj, path) ? 'checked' : false });
+    c.addEventListener('change', () => { setPath(obj, path, c.checked); if (onChange) onChange(); changed(); });
+    return el('label', { class: 'check' }, c, label);
+  }
+
+  const pctFmt = (v) => Math.round(v * 100) + '%';
+  const intF = (v) => Math.round(v).toLocaleString('en-US');
+
+  function stageBlock(p, key, title, color, enabledPath, buildBody, tag) {
+    const det = el('details', { class: 'stage' });
+    if (p._open && p._open[key]) det.open = true;
+    det.addEventListener('toggle', () => { p._open = p._open || {}; p._open[key] = det.open; });
+    const sum = el('summary', null, el('span', { class: 'chev' }, '▶'), el('span', { class: 'dot', style: 'background:' + color }), title);
+    if (enabledPath) {
+      const sw = el('label', { class: 'switch', title: 'Include this stage' },
+        el('input', { type: 'checkbox', checked: getPath(p, enabledPath) ? 'checked' : false, 'aria-label': 'Include ' + title }), el('span'));
+      sw.addEventListener('click', (e) => e.stopPropagation());
+      sw.querySelector('input').addEventListener('change', (e) => { setPath(p, enabledPath, e.target.checked); renderControls(); changed(); });
+      sum.append(el('span', { class: 'tag', 'data-tag': key }, tag || ''), sw);
+    } else {
+      sum.append(el('span', { class: 'tag', 'data-tag': key }, tag || ''));
+    }
+    det.append(sum);
+    const body = el('div', { class: 'body' });
+    buildBody(body);
+    det.append(body);
+    return det;
+  }
+
+  function projectCard(p, idx) {
+    const card = el('section', { class: 'card', 'data-pid': p.id });
+    const name = el('input', { value: p.name, 'aria-label': 'Project name' });
+    name.addEventListener('input', () => { p.name = name.value; changed(); });
+    const dup = el('button', { class: 'icon-btn', title: 'Duplicate this project' }, 'Copy');
+    dup.addEventListener('click', () => {
+      const c = JSON.parse(JSON.stringify(p));
+      const fresh = CE.newProject('x');
+      c.id = fresh.id; c.name = p.name + ' (copy)';
+      S.projects.splice(idx + 1, 0, c);
+      renderControls(); changed();
+    });
+    const del = el('button', { class: 'icon-btn', title: 'Remove this project' }, 'Remove');
+    del.addEventListener('click', () => {
+      if (S.projects.length === 1) { toast('Keep at least one project'); return; }
+      S.projects.splice(idx, 1); renderControls(); changed();
+    });
+    card.append(el('div', { class: 'proj-head' }, name, dup, del));
+    card.append(el('p', { class: 'proj-total', 'data-ptotal': p.id }, ''));
+
+    const st = CE.STAGES;
+    // note reading
+    card.append(stageBlock(p, 'reading', 'Note reading', st[0].color, 'reading.on', (b) => {
+      if (!p.reading.on) { b.append(el('p', { class: 'off-note' }, 'Off. Switch on to have LLMs read this project\'s notes.')); return; }
+      b.append(
+        el('p', { class: 'off-note' }, 'The fixed cost. Each reader model reads every note once per reading and answers questions about it.'),
+        sliderField(p, { path: 'reading.notes', label: 'Notes', min: 1000, max: 100e6, log: true }),
+        sliderField(p, { path: 'reading.tokensPerNote', label: 'Tokens per note', min: 100, max: 5000, step: 10, fmt: intF,
+          help: 'A token is about three-quarters of a word. A short progress note runs a few hundred tokens.' }),
+        sliderField(p, { path: 'reading.overhead', label: 'Instructions added', min: 0, max: 2, step: 0.05, fmt: pctFmt, pct: true,
+          help: 'Prompt text sent with each note, as a share of the note\'s length.' }),
+        sliderField(p, { path: 'reading.outPerNote', label: 'Answer tokens per note', min: 0, max: 2000, step: 10, fmt: intF }),
+        sliderField(p, { path: 'reading.simple', label: 'Simple readings', min: 0, max: 20, fmt: intF, int: true }),
+        sliderField(p, { path: 'reading.detailed', label: 'Detailed extractions', min: 0, max: 10, fmt: intF, int: true,
+          help: 'Each takes ' + S.assume.detailedMult + ' times as long as a simple reading.' }),
+        sliderField(p, { path: 'reading.readers', label: 'Reader models', min: 1, max: 5, fmt: intF, int: true,
+          help: 'Several models reading the same notes and voting.' }),
+        selectField(p, { path: 'reading.model', label: 'Reader model', options: modelOpts() }),
+        selectField(p, { path: 'reading.precision', label: 'Precision', options: Object.entries(CE.PRECISIONS),
+          help: 'Lower precision lets a large model fit on smaller GPUs; it does not change the speed in this estimate.' }),
+      );
+    }));
+
+    // résumés
+    card.append(stageBlock(p, 'resume', 'Patient résumés', st[1].color, null, (b) => {
+      b.append(selectField(p, { path: 'resume.mode', label: 'How résumés are made', options: [
+        ['none', 'No résumés'], ['template', 'Fixed template, CPU only'], ['llm', 'Written by an LLM']] }, () => renderControls()));
+      if (p.resume.mode === 'none') return;
+      b.append(
+        sliderField(p, { path: 'resume.records', label: 'Patient records', min: 1000, max: 1e6, log: true }),
+        sliderField(p, { path: 'resume.versions', label: 'Résumé versions', min: 1, max: 4, fmt: intF, int: true }),
+      );
+      if (p.resume.mode !== 'llm') return;
+      b.append(
+        selectField(p, { path: 'resume.model', label: 'Writer model', options: modelOpts() }),
+        sliderField(p, { path: 'resume.inTokens', label: 'Source tokens per résumé', min: 500, max: 32768, step: 100, fmt: intF }),
+        sliderField(p, { path: 'resume.outTokens', label: 'Résumé length, tokens', min: 100, max: 4096, step: 50, fmt: intF }),
+        checkField(p, 'resume.ft.on', 'Fine-tune the writer on example summaries', () => renderControls()),
+      );
+      if (!p.resume.ft.on) return;
+      b.append(
+        selectField(p, { path: 'resume.ft.method', label: 'Writer training method', options: methodOpts(false) }),
+        sliderField(p, { path: 'resume.ft.pairs', label: 'Example pairs', min: 500, max: 100000, log: true }),
+        sliderField(p, { path: 'resume.ft.tokens', label: 'Tokens per pair', min: 1000, max: 32768, step: 256, fmt: intF }),
+        sliderField(p, { path: 'resume.ft.epochs', label: 'Epochs', min: 1, max: 6, fmt: intF, int: true }),
+        sliderField(p, { path: 'resume.ft.fits', label: 'Candidate writers trained', min: 1, max: 10, fmt: intF, int: true }),
+      );
+    }, ({ none: 'none', template: 'template', llm: 'LLM' })[p.resume.mode]));
+
+    // prediction model
+    card.append(stageBlock(p, 'predict', 'Prediction model', st[3].color, 'predict.on', (b) => {
+      if (!p.predict.on) { b.append(el('p', { class: 'off-note' }, 'Off. Switch on to train and score LLM prediction models.')); return; }
+      b.append(
+        el('p', { class: 'off-note' }, 'The variable cost. The base model reads each patient\'s résumé and predicts the outcome.'),
+        selectField(p, { path: 'predict.model', label: 'Base model', options: modelOpts() }),
+        selectField(p, { path: 'predict.method', label: 'Training method', options: methodOpts(true),
+          help: 'QLoRA and LoRA train small added weights and leave the base model fixed. A full fine-tune updates every weight and needs about 18 bytes of GPU memory per parameter.' }, () => renderControls()),
+      );
+      const trains = p.predict.method !== 'zeroshot';
+      if (trains) {
+        b.append(
+          sliderField(p, { path: 'predict.examples', label: 'Training examples per fit', min: 1000, max: 1e6, log: true }),
+          sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF }),
+          selectField(p, { path: 'predict.schedule', label: 'Epochs', options: Object.entries(CE.SCHEDULES).map(([k, s]) => [k, s.label]) }),
+        );
+      } else {
+        b.append(sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF }));
+      }
+      b.append(
+        sliderField(p, { path: 'predict.baseModels', label: 'Base models compared', min: 1, max: 5, fmt: intF, int: true }),
+        sliderField(p, { path: 'predict.versions', label: 'Résumé versions compared', min: 1, max: 4, fmt: intF, int: true }),
+        sliderField(p, { path: 'predict.splits', label: 'Splits or seeds', min: 1, max: 10, fmt: intF, int: true }),
+        sliderField(p, { path: 'predict.testRecords', label: 'Records scored per fit', min: 500, max: 200000, log: true }),
+      );
+      if (trains) {
+        b.append(sliderField(p, { path: 'predict.allowance', label: 'Evaluation allowance', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true,
+          help: 'Repeated scoring and comparisons, as a share of QLoRA training time. It does not change with the training method.' }));
+      }
+    }, ''));
+
+    // cpu
+    card.append(stageBlock(p, 'cpu', 'CPU-only work', 'var(--rest)', null, (b) => {
+      b.append(sliderField(p, { path: 'cpuCoreHours', label: 'Core-hours', min: 100, max: 1e6, log: true, zero: true,
+        help: 'Data cleaning, joins, conventional models such as XGBoost, and checks.' }));
+    }, ''));
+    return card;
+  }
+
+  function hardwareCard() {
+    const card = el('section', { class: 'card' });
+    card.append(el('h3', null, 'Hardware'));
+    const seg = el('div', { class: 'seg', style: 'display:grid;grid-template-columns:1fr 1fr;border-radius:12px;width:100%' });
+    for (const [k, lab] of [['h200', 'Randi H200'], ['a100', 'Randi A100'], ['spark', 'DGX Spark'], ['combo', 'Spark + Randi']]) {
+      const b = el('button', { 'aria-pressed': S.hw.setup === k ? 'true' : 'false' }, lab);
+      b.addEventListener('click', () => { S.hw.setup = k; renderControls(); changed(); });
+      seg.append(b);
+    }
+    card.append(seg);
+    const usesRandi = S.hw.setup !== 'spark';
+    const usesSpark = S.hw.setup === 'spark' || S.hw.setup === 'combo';
+    if (usesRandi) {
+      card.append(
+        sliderField(S, { path: 'hw.randiGpus', label: 'Randi GPUs we hold at once', min: 1, max: 16, fmt: intF, int: true,
+          help: 'The lab cap is 4. Randi has 8 H200s and 40 A100s in total.' }),
+        sliderField(S, { path: 'hw.duty', label: 'Share of time our jobs run', min: 0.1, max: 1, step: 0.05, fmt: pctFmt, pct: true,
+          help: 'The rest is spent waiting in the queue. At 60%, ten hours of GPU work take about 17 hours to come back.' }),
+      );
+    }
+    if (usesSpark) {
+      card.append(
+        sliderField(S, { path: 'hw.sparkUnits', label: 'DGX Sparks', min: 1, max: 4, fmt: intF, int: true,
+          help: 'A Spark is a desktop machine with 128 GB of memory shared by CPU and GPU. Two can be linked to hold larger models.' }),
+        sliderField(S, { path: 'hw.sparkUptime', label: 'Spark uptime', min: 0.5, max: 1, step: 0.05, fmt: pctFmt, pct: true }),
+      );
+    }
+    return card;
+  }
+
+  function globalCard() {
+    const card = el('section', { class: 'card' });
+    card.append(el('h3', null, 'For every project'));
+    card.append(sliderField(S, { path: 'contingency', label: 'Extra time for reruns and failures', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true }));
+    const ms = el('select', { 'aria-label': 'Base model for every project' });
+    ms.append(el('option', { value: '' }, 'Set the base model everywhere…'));
+    for (const [k, lab] of modelOpts()) ms.append(el('option', { value: k }, lab));
+    ms.addEventListener('change', () => {
+      if (!ms.value) return;
+      for (const p of S.projects) { p.predict.model = ms.value; p.resume.model = ms.value; }
+      renderControls(); changed();
+    });
+    const ts = el('select', { 'aria-label': 'Training method for every project' });
+    ts.append(el('option', { value: '' }, 'Set the training method everywhere…'));
+    for (const [k, lab] of methodOpts(true)) ts.append(el('option', { value: k }, lab));
+    ts.addEventListener('change', () => {
+      if (!ts.value) return;
+      for (const p of S.projects) {
+        p.predict.method = ts.value;
+        if (ts.value !== 'zeroshot') p.resume.ft.method = ts.value;
+      }
+      renderControls(); changed();
+    });
+    card.append(el('div', { class: 'field' }, ms), el('div', { class: 'field' }, ts));
+    return card;
+  }
+
+  function renderControls() {
+    const box = $('controls');
+    const top = box.scrollTop;
+    box.innerHTML = '';
+    box.append(hardwareCard(), globalCard());
+    S.projects.forEach((p, i) => box.append(projectCard(p, i)));
+    const add = el('button', { class: 'btn primary', style: 'width:100%;margin-bottom:14px' }, '+ Add a project');
+    add.addEventListener('click', () => {
+      const letter = String.fromCharCode(65 + (S.projects.length % 26));
+      const p = CE.newProject('Project ' + letter);
+      p._open = { reading: true, predict: true };
+      S.projects.push(p);
+      renderControls(); changed();
+      box.scrollTop = box.scrollHeight;
+    });
+    box.append(add);
+    box.scrollTop = top;
+    for (const b of document.querySelectorAll('#speedSeg button')) b.setAttribute('aria-pressed', b.dataset.speeds === S.speeds ? 'true' : 'false');
+  }
+
+  // ---------- results ----------
+  let pending = false;
+  function changed() {
+    if (pending) return;
+    pending = true;
+    setTimeout(() => { pending = false; renderResults(); save(); }, 16);
+  }
+
+  const SETUP_LABEL = () => ({
+    h200: 'Randi H200 × ' + Math.min(S.hw.randiGpus, 8),
+    a100: 'Randi A100 × ' + Math.min(S.hw.randiGpus, 40),
+    spark: 'DGX Spark × ' + S.hw.sparkUnits,
+    combo: 'Spark × ' + S.hw.sparkUnits + ' + H200 × ' + Math.min(S.hw.randiGpus, 8),
+  });
+
+  function blockerText(b) {
+    const lab = { h200: 'H200s', a100: 'A100s', spark: 'Sparks' }[b.kind];
+    return b.job.pname + ': ' + b.job.label.toLowerCase() + ' with ' + CE.MODELS[b.job.model].label.split(' (')[0] +
+      ' needs ' + b.need + ' ' + lab + ' at once';
+  }
+
+  function renderKpis(R) {
+    const sel = R.setups[S.hw.setup];
+    const L = SETUP_LABEL();
+    const k = $('kpis');
+    k.innerHTML = '';
+    const unitNow = { h200: 'H200-hours', a100: 'A100-hours', spark: 'Spark-hours', combo: 'H200-equivalent hours' }[S.hw.setup];
+    let mainHours, mainSub;
+    if (S.hw.setup === 'combo') {
+      mainHours = sel.gpuH.h200 + sel.gpuH.spark * S.assume.sparkSpeed;
+      mainSub = 'On ' + L.combo + ': <b>' + hoursFmt(sel.gpuH.h200) + '</b> H200-hours on Randi and <b>' + hoursFmt(sel.gpuH.spark) + '</b> Spark-hours.';
+    } else {
+      mainHours = sel.gpuH[S.hw.setup];
+      mainSub = 'On ' + L[S.hw.setup] + '.' + (S.hw.setup === 'h200' ? '' : ' Equal to <b>' + hoursFmt(R.totalH200) + '</b> H200-hours.');
+    }
+    if (!sel.ok) mainSub += ' Some jobs do not fit; they are left out.';
+    const extra = Math.round(R.contingency * 100);
+    k.append(tile('hero', unitNow, hoursFmt(mainHours),
+      mainSub + ' Includes ' + extra + '% extra time. One A100-hour is about ' + trim((S.assume.a100Speed).toFixed(2)) + ' H200-hours; one Spark-hour about ' + trim(S.assume.sparkSpeed.toFixed(2)) + '.', sel));
+
+    let wallSub = 'On ' + L[S.hw.setup] + '.';
+    if (S.hw.setup === 'spark' || S.hw.setup === 'combo') wallSub += ' Published Spark speeds give ' + duration(sel.wallFast) + ' to ' + duration(sel.wallSlow) + '.';
+    else wallSub += ' Our jobs run ' + Math.round(S.hw.duty * 100) + '% of the time.';
+    k.append(tile('', 'Calendar time', sel.ok || sel.wall > 0 ? duration(sel.wall) : 'n/a', wallSub));
+
+    k.append(tile('', 'Tokens processed', compact(R.tokens.total), '<b>' + compact(R.tokens.read) + '</b> read or written by models, <b>' + compact(R.tokens.train) + '</b> passed through training.'));
+
+    const sup = R.cpu.support > 0 ? '<b>' + compact(R.cpu.support) + '</b> supporting the GPUs (' + S.assume.coresPerGpu + ' cores each) and ' : '';
+    k.append(tile('', 'CPU core-hours', compact(R.cpu.total), sup + '<b>' + compact(R.cpu.only) + '</b> of CPU-only work.'));
+
+    let costV, costSub;
+    const rentAll = R.totalH200 * S.assume.h200Price;
+    if (S.hw.setup === 'spark') {
+      costV = money(sel.cost.spark);
+      costSub = 'Purchase price of ' + S.hw.sparkUnits + ' Spark' + (S.hw.sparkUnits > 1 ? 's' : '') + '. Renting H200s for the same work: <b>' + money(rentAll) + '</b>.';
+    } else if (S.hw.setup === 'combo') {
+      costV = money(sel.cost.cloud + sel.cost.spark);
+      costSub = '<b>' + money(sel.cost.cloud) + '</b> for the H200 hours at cloud rates plus <b>' + money(sel.cost.spark) + '</b> for the Sparks.';
+    } else {
+      costV = money(sel.cost.cloud);
+      const rate = S.hw.setup === 'h200' ? S.assume.h200Price : S.assume.a100Price;
+      costSub = 'What these hours would cost to rent, at $' + rate.toFixed(2) + ' per GPU-hour. Randi itself does not charge us.';
+    }
+    k.append(tile('', 'Cloud-equivalent cost', costV, costSub));
+  }
+
+  function tile(cls, k, v, d, sel) {
+    const t = el('div', { class: 'tile ' + cls }, el('div', { class: 'k' }, k), el('div', { class: 'v' }, v), el('div', { class: 'd', html: d }));
+    if (sel && !sel.ok) {
+      const seen = new Set();
+      for (const b of sel.blockers) {
+        const txt = blockerText(b);
+        if (seen.has(txt)) continue;
+        seen.add(txt);
+        t.append(el('div', { class: 'warnline' }, el('span', { class: 'badge bad', 'aria-hidden': 'true' }, '✕'), el('span', null, 'Does not fit: ' + txt + '.')));
+        if (seen.size >= 3) break;
+      }
+    }
+    return t;
+  }
+
+  function niceTicks(max, n) {
+    if (max <= 0) return [0];
+    const raw = max / n;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw);
+    const out = [];
+    for (let v = 0; v <= max * 1.0001 + step * 0.01; v += step) out.push(v);
+    if (out[out.length - 1] < max) out.push(out[out.length - 1] + step);
+    return out;
+  }
+
+  function textWidth(s, size) { return s.length * (size || 12) * 0.58; }
+
+  function renderStack(R) {
+    const box = $('stackChart');
+    const W = Math.max(260, box.clientWidth || 700);
+    const rows = [{ name: 'All projects', byStage: R.byStage, total: R.workH200, extra: R.extraH200, all: true }];
+    if (S.projects.length > 1) for (const p of R.perProject) rows.push({ name: p.name, byStage: p.byStage, total: p.total, extra: 0 });
+    const labelW = Math.min(170, Math.max(90, ...rows.map((r) => textWidth(r.name, 12.5) + 12)));
+    const right = 70, top = 8, rowH = 40, barH = 22;
+    const plotW = W - labelW - right;
+    const max = Math.max(1, ...rows.map((r) => r.total + r.extra));
+    const ticks = niceTicks(max, plotW > 500 ? 5 : 3);
+    const xmax = ticks[ticks.length - 1];
+    const x = (v) => labelW + (v / xmax) * plotW;
+    const H = top + rows.length * rowH + 24;
+    const g = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'GPU-hours by stage' });
+    for (const t of ticks) {
+      g.append(sv('line', { x1: x(t), x2: x(t), y1: top - 4, y2: top + rows.length * rowH, class: t === 0 ? 'axis' : 'grid' }));
+      g.append(sv('text', { x: x(t), y: H - 6, 'text-anchor': 'middle', class: 't-muted', style: 'font-variant-numeric:tabular-nums' }, compact(t)));
+    }
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + (rowH - barH) / 2;
+      g.append(sv('text', { x: 0, y: y + barH / 2 + 4, class: r.all ? 't-strong' : 't-ink', style: 'font-size:12.5px' }, r.name));
+      let acc = 0;
+      const segs = CE.STAGES.map((s) => ({ key: s.key, label: s.label, color: s.color, v: r.byStage[s.key] }))
+        .concat(r.extra > 0 ? [{ key: 'extra', label: 'Extra time', color: 'var(--rest)', v: r.extra }] : [])
+        .filter((s) => s.v > 0);
+      const tot = r.total + r.extra;
+      segs.forEach((s, si) => {
+        const x0 = x(acc), x1 = x(acc + s.v);
+        acc += s.v;
+        const last = si === segs.length - 1;
+        const w = Math.max(0.5, x1 - x0 - (last ? 0 : 2));
+        const tip = `<b>${esc(r.name)}</b><br>${s.label}: ${hoursFmt(s.v)} H200-hours<br><span class="m">${Math.round(100 * s.v / tot)}% of this row</span>`;
+        const path = last ? roundedRight(x0, y, w, barH, 4) : `M${x0},${y}h${w}v${barH}h${-w}z`;
+        g.append(sv('path', { d: path, fill: s.color, 'data-tip': tip, tabindex: 0 }));
+        const pct = Math.round(100 * s.v / tot) + '%';
+        if (w > textWidth(pct, 11) + 14 && s.v / tot > 0.08) {
+          g.append(sv('text', { x: x0 + w / 2, y: y + barH / 2 + 4, 'text-anchor': 'middle', style: 'font-size:11px;fill:' + insideInk(s.key), 'pointer-events': 'none' }, pct));
+        }
+      });
+      g.append(sv('text', { x: x(tot) + 6, y: y + barH / 2 + 4, class: 't-strong', style: 'font-variant-numeric:tabular-nums' }, compact(tot)));
+    });
+    box.innerHTML = '';
+    box.append(g);
+    const lg = $('stackLegend');
+    lg.innerHTML = '';
+    for (const s of CE.STAGES) lg.append(el('span', null, el('i', { style: 'background:' + s.color }), s.label));
+    lg.append(el('span', null, el('i', { style: 'background:var(--rest)' }), 'Extra time'));
+    const share = R.workH200 > 0 ? Math.round(100 * R.byStage.reading / R.workH200) : 0;
+    $('stackSub').textContent = 'H200-equivalent hours, so the bars do not change with the hardware choice. Note reading, the fixed cost, is ' + share + '% of the work before extra time.';
+  }
+  function insideInk(key) {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    if (dark) return '#ffffff';
+    return key === 'reading' || key === 'resume' ? '#ffffff' : '#0b0b0b';
+  }
+  function roundedRight(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    return `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 ${-r},${r}h${-(w - r)}z`;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+  function renderTime(R) {
+    const box = $('timeChart');
+    const W = Math.max(260, box.clientWidth || 700);
+    const L = SETUP_LABEL();
+    const order = ['h200', 'a100', 'spark', 'combo'];
+    const narrow = W < 560;
+    const labelW = narrow ? 0 : Math.min(200, Math.max(...order.map((k) => textWidth(L[k], 12.5) + 14)));
+    const right = narrow ? 8 : 16, top = 30, rowH = narrow ? 58 : 44;
+    const plotW = W - labelW - right;
+    const marks = [[24, '1 day'], [24 * 7, '1 week'], [24 * 30.44, '1 month'], [24 * 365.25, '1 year'], [24 * 365.25 * 5, '5 years']];
+    const walls = order.flatMap((k) => [R.setups[k].wall, R.setups[k].wallSlow || 0]).filter((v) => v > 0 && isFinite(v));
+    const lo = Math.min(2, ...walls.map((v) => v / 2));
+    const hi = Math.max(24 * 365.25 * 6, ...walls.map((v) => v * 1.6));
+    const x = (h) => labelW + plotW * (Math.log(Math.max(h, lo)) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+    const H = top + order.length * rowH + 10;
+    const g = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Calendar time by hardware, log scale' });
+    for (const [h, lab] of marks) {
+      if (h < lo || h > hi) continue;
+      g.append(sv('line', { x1: x(h), x2: x(h), y1: top - 8, y2: H - 6, class: 'grid' }));
+      g.append(sv('text', { x: x(h), y: top - 14, 'text-anchor': 'middle', class: 't-muted', style: 'font-size:11.5px' }, lab));
+    }
+    order.forEach((k, i) => {
+      const s = R.setups[k];
+      const y = top + i * rowH + rowH / 2 + (narrow ? 8 : 0);
+      const selected = k === S.hw.setup;
+      const rowText = narrow ? L[k] + ': ' + (s.ok || s.wall > 0 ? duration(s.wall) + (s.ok ? '' : ' (partial)') : 'nothing fits') : L[k];
+      g.append(sv('text', { x: 0, y: narrow ? y - 14 : y + 4, class: selected ? 't-strong' : 't-ink', style: 'font-size:12.5px' }, rowText));
+      g.append(sv('line', { x1: labelW, x2: labelW + plotW, y1: y, y2: y, stroke: 'var(--track)', 'stroke-width': 6, 'stroke-linecap': 'round' }));
+      const color = selected ? 'var(--s1)' : 'var(--rest)';
+      if (!s.ok && s.wall <= 0) {
+        if (!narrow) g.append(sv('text', { x: labelW + 8, y: y - 9, class: 't-muted', style: 'font-size:11.5px' }, '✕ nothing fits'));
+        return;
+      }
+      if (s.wallSlow) {
+        g.append(sv('line', { x1: x(s.wallFast), x2: x(s.wallSlow), y1: y, y2: y, stroke: color, 'stroke-width': 2 }));
+        for (const v of [s.wallFast, s.wallSlow]) g.append(sv('line', { x1: x(v), x2: x(v), y1: y - 6, y2: y + 6, stroke: color, 'stroke-width': 2 }));
+      }
+      const hrs = k === 'combo' ? hoursFmt(s.gpuH.h200) + ' H200-h + ' + hoursFmt(s.gpuH.spark) + ' Spark-h'
+        : hoursFmt(s.gpuH[k]) + ' ' + { h200: 'H200', a100: 'A100', spark: 'Spark' }[k] + '-hours';
+      const range = s.wallSlow ? `<br><span class="m">Published Spark speeds: ${duration(s.wallFast)} to ${duration(s.wallSlow)}</span>` : '';
+      const miss = s.ok ? '' : `<br><span class="m">Leaves out ${s.blockers.length} job${s.blockers.length > 1 ? 's' : ''} that do not fit</span>`;
+      g.append(sv('circle', { cx: x(s.wall), cy: y, r: selected ? 7 : 6, fill: color, stroke: 'var(--surface)', 'stroke-width': 2,
+        'data-tip': `<b>${esc(L[k])}</b><br>${duration(s.wall)}<br>${hrs}${range}${miss}`, tabindex: 0 }));
+      if (narrow) return;
+      const lab = duration(s.wall) + (s.ok ? '' : ' (partial)');
+      const lx = x(s.wall);
+      const anchorEnd = lx > labelW + plotW - 110;
+      g.append(sv('text', { x: anchorEnd ? lx - 12 : lx + 12, y: y - 9, 'text-anchor': anchorEnd ? 'end' : 'start', class: selected ? 't-strong' : 't-ink', style: 'font-size:12.5px' }, lab));
+    });
+    box.innerHTML = '';
+    box.append(g);
+
+    const notes = $('timeNotes');
+    notes.innerHTML = '';
+    const msgs = [];
+    for (const k of order) {
+      const s = R.setups[k];
+      if (s.ok) continue;
+      const seen = new Set();
+      for (const b of s.blockers) {
+        const t = blockerText(b);
+        if (!seen.has(t)) seen.add(t);
+      }
+      msgs.push([L[k], [...seen].slice(0, 2).join('; ') + (seen.size > 2 ? '; and others' : '')]);
+    }
+    for (const [lab, m] of msgs) {
+      notes.append(el('div', { class: 'warnline' }, el('span', { class: 'badge bad', 'aria-hidden': 'true' }, '✕'), el('span', null, lab + ': ' + m + '.')));
+    }
+    const spark = R.setups.spark, h = R.setups.h200;
+    if (spark.ok && h.ok && h.wall > 0) {
+      const perH = 1 / S.assume.sparkSpeed;
+      const breakEven = S.assume.sparkPrice / S.assume.h200Price;
+      notes.append(el('p', { class: 'note', style: 'margin:10px 0 0' },
+        'One Spark does about one H200-hour of work in ' + trim(perH.toFixed(1)) + ' hours. Its price buys about ' + Math.round(breakEven).toLocaleString('en-US') +
+        ' rented H200-hours, which a Spark takes ' + duration(breakEven * perH / S.hw.sparkUptime) + ' to match.'));
+    }
+  }
+
+  function renderTokens(R) {
+    const T = R.tokens.total;
+    const wordsN = T * 0.75;
+    const books = wordsN / 100000;
+    $('tokSub').textContent = words(T) + ' tokens in all. A token is about three-quarters of a word; a book here is 100,000 words.';
+    // pictogram
+    const box = $('books');
+    const W = Math.max(260, box.clientWidth || 500);
+    let unit = 1;
+    const steps = [1, 2, 5];
+    for (let e = 0; books / unit > 100; ) {
+      e++;
+      unit = steps[e % 3] * Math.pow(10, Math.floor(e / 3));
+    }
+    const n = books / unit;
+    const full = Math.floor(n);
+    const frac = n - full;
+    const perRow = 25;
+    const bw = (W - 4) / perRow;
+    const rowsN = Math.max(1, Math.ceil(n / perRow));
+    const shelfH = 46;
+    const H = rowsN * shelfH + 26;
+    const g = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': compact(books) + ' books' });
+    const count = Math.ceil(n);
+    for (let i = 0; i < count; i++) {
+      const r = Math.floor(i / perRow), c = i % perRow;
+      const hgt = 26 + ((i * 7919) % 11);
+      const wid = Math.max(4, bw - 3.5);
+      const x0 = 2 + c * bw, base = 10 + (r + 1) * shelfH - 8;
+      const isPart = i === full && frac > 0;
+      const w = isPart ? Math.max(1.5, wid * frac) : wid;
+      g.append(sv('rect', { x: x0, y: base - hgt, width: w, height: hgt, rx: 1.5, fill: 'var(--s1)', opacity: isPart ? 0.55 : (i % 3 === 0 ? 1 : i % 3 === 1 ? 0.82 : 0.68) }));
+      if (w > 6) g.append(sv('rect', { x: x0 + 1.5, y: base - hgt + 5, width: w - 3, height: 2, fill: 'var(--surface)', opacity: 0.55 }));
+    }
+    for (let r = 0; r < rowsN; r++) {
+      const base = 10 + (r + 1) * shelfH - 8;
+      g.append(sv('line', { x1: 0, x2: W, y1: base + 1, y2: base + 1, class: 'axis' }));
+    }
+    g.append(sv('text', { x: 0, y: H - 4, class: 't-muted', style: 'font-size:12px' },
+      unit === 1 ? 'Each spine is one book.' : 'Each spine is ' + words(unit) + ' books.'));
+    box.innerHTML = '';
+    box.append(el('div', { style: 'font-size:28px;font-weight:650;margin-bottom:2px' }, words(books) + ' books'));
+    box.append(g);
+
+    // stack-height ruler
+    const sb = $('stack');
+    const SW = Math.max(260, sb.clientWidth || 500);
+    const height = books * 0.03;
+    const marks = [[1.8, 'a person'], [442, 'Willis Tower'], [8849, 'Everest'], [408000, 'space station'], [384400000, 'the Moon']];
+    const lo = 0.5, hi = 2e9;
+    const x = (m) => 8 + (SW - 16) * (Math.log(Math.max(lo, Math.min(hi, m))) - Math.log(lo)) / (Math.log(hi) - Math.log(lo));
+    const g2 = sv('svg', { viewBox: `0 0 ${SW} 74`, role: 'img', 'aria-label': 'Height of the stack of books' });
+    g2.append(sv('line', { x1: 8, x2: SW - 8, y1: 40, y2: 40, stroke: 'var(--track)', 'stroke-width': 6, 'stroke-linecap': 'round' }));
+    g2.append(sv('line', { x1: 8, x2: x(height), y1: 40, y2: 40, stroke: 'var(--s1)', 'stroke-width': 6, 'stroke-linecap': 'round', opacity: 0.45 }));
+    marks.forEach(([m, lab], i) => {
+      g2.append(sv('line', { x1: x(m), x2: x(m), y1: 33, y2: 47, class: 'axis' }));
+      g2.append(sv('text', { x: x(m), y: 64, 'text-anchor': i === marks.length - 1 ? 'end' : 'middle', class: 't-muted', style: 'font-size:11.5px' }, lab));
+    });
+    g2.append(sv('circle', { cx: x(height), cy: 40, r: 7, fill: 'var(--s1)', stroke: 'var(--surface)', 'stroke-width': 2,
+      'data-tip': `<b>Stacked flat, 3 cm a book</b><br>${heightFmt(height)}`, tabindex: 0 }));
+    const hx = x(height);
+    g2.append(sv('text', { x: hx > SW - 150 ? hx : hx, y: 18, 'text-anchor': hx > SW - 150 ? 'end' : hx < 60 ? 'start' : 'middle', class: 't-strong', style: 'font-size:12.5px' }, 'Stacked: ' + heightFmt(height)));
+    sb.innerHTML = '';
+    sb.append(g2);
+
+    // facts
+    const f = $('tokFacts');
+    f.innerHTML = '';
+    const readYears = wordsN / 250 / 60 / 2000;
+    const wiki = wordsN / 4.9e9;
+    const notesTok = R.jobs.filter((j) => j.stage === 'reading').reduce((a, j) => a + j.tokIn + j.tokOut, 0);
+    const facts = [
+      [yearsFmt(readYears), 'of reading for one person at 250 words a minute, 8 hours a day, 250 days a year' + (readYears > 80 ? ', or about ' + compact(readYears / 40) + ' forty-year careers.' : '.')],
+      [wiki >= 1 ? compact(wiki) + '×' : trim((wiki * 100).toFixed(wiki * 100 < 1 ? 2 : 0)) + '%', 'of English Wikipedia, which runs about 4.9 billion words.'],
+      [compact(notesTok), 'tokens go to note reading, ' + (T > 0 ? Math.round(100 * notesTok / T) : 0) + '% of the total.'],
+      [compact(R.tokens.train), 'tokens pass through training, counting every epoch and every fit.'],
+    ];
+    for (const [n, t] of facts) f.append(el('div', { class: 'fact' }, el('div', { class: 'n' }, n), el('div', { class: 't' }, t)));
+  }
+  function heightFmt(m) {
+    if (m < 1) return Math.round(m * 100) + ' cm';
+    if (m < 1000) return Math.round(m) + ' m';
+    if (m < 1e6) return trim((m / 1000).toFixed(m < 1e4 ? 1 : 0)) + ' km';
+    return compact(m / 1000, 1) + ' km';
+  }
+  function yearsFmt(y) {
+    if (y < 1) return Math.round(y * 12) + ' months';
+    if (y < 10) return trim(y.toFixed(1)) + ' years';
+    return compact(y) + ' years';
+  }
+
+  function renderFit() {
+    const sel = $('fitModel');
+    if (!sel.options.length) {
+      for (const [k, lab] of modelOpts()) sel.append(el('option', { value: k }, lab));
+      sel.value = S.projects[0] ? S.projects[0].predict.model : 'm27';
+      sel.addEventListener('change', renderFit);
+    }
+    const m = sel.value;
+    const A = S.assume;
+    const rows = [['bf16', 'Inference, full precision'], ['int4', 'Inference, 4-bit'], ['qlora', 'QLoRA training'], ['lora', 'LoRA training'], ['full', 'Full fine-tune']];
+    const cols = [['h200', 'H200'], ['a100', 'A100'], ['spark', 'Spark']];
+    const t = el('table');
+    t.append(el('tr', null, el('th', null, 'Use'), el('th', { class: 'num' }, 'Memory'), ...cols.map(([, l]) => el('th', null, l))));
+    for (const [kind, lab] of rows) {
+      const mem = CE.memNeed(m, kind, A);
+      const tr = el('tr', null, el('td', null, lab), el('td', { class: 'num' }, Math.round(mem) + ' GB'));
+      for (const [g] of cols) {
+        const pl = CE.placement(mem, g, S, A, A.sparkSpeed);
+        let badge, txt;
+        const unit = g === 'spark' ? (pl.k === 1 ? 'Spark' : 'Sparks') : (pl.k === 1 ? 'GPU' : 'GPUs');
+        if (pl.ok) { badge = 'good'; txt = pl.k + ' ' + unit; }
+        else if (g !== 'spark' && pl.k <= pl.inventory) { badge = 'warn'; txt = 'needs ' + pl.k + ', we hold ' + pl.cap; }
+        else if (g === 'spark' && pl.k <= 4) { badge = 'warn'; txt = 'needs ' + pl.k + ' linked'; }
+        else { badge = 'bad'; txt = 'needs ' + pl.k + ', too many'; }
+        const icon = { good: '✓', warn: '!', bad: '✕' }[badge];
+        tr.append(el('td', null, el('span', { class: 'fit' }, el('span', { class: 'badge ' + badge, 'aria-hidden': 'true' }, icon), txt)));
+      }
+      t.append(tr);
+    }
+    const box = $('fitTable');
+    box.innerHTML = '';
+    box.append(t);
+  }
+
+  function renderTornado() {
+    const box = $('tornado');
+    const T = CE.tornado(S);
+    const rows = T.rows.slice(0, 8);
+    const W = Math.max(260, box.clientWidth || 500);
+    const narrow = W < 560;
+    const labelW = narrow ? 0 : Math.min(150, Math.max(...rows.map((r) => textWidth(r.label, 12.5) + 10), 60));
+    const rowH = narrow ? 42 : 30, top = 22, barH = 16, pad = narrow ? 42 : 54;
+    const plotW = W - labelW - pad * 2;
+    const ext = Math.max(1, ...rows.map((r) => Math.max(Math.abs(r.lo), Math.abs(r.hi))));
+    const cx = labelW + pad + plotW / 2;
+    const sx = (v) => cx + (v / ext) * (plotW / 2);
+    const H = top + rows.length * rowH + 8;
+    const g = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Sensitivity of total GPU-hours' });
+    g.append(sv('text', { x: cx, y: 12, 'text-anchor': 'middle', class: 't-muted', style: 'font-size:11.5px' }, 'now ' + compact(T.base) + ' H200-hours'));
+    g.append(sv('line', { x1: cx, x2: cx, y1: top - 4, y2: H - 4, class: 'axis' }));
+    rows.forEach((r, i) => {
+      const y = top + i * rowH + (rowH - barH) / 2 + (narrow ? 7 : 0);
+      g.append(sv('text', { x: narrow ? cx : 0, y: narrow ? y - 4 : y + barH / 2 + 4, 'text-anchor': narrow ? 'middle' : 'start', class: 't-ink', style: 'font-size:12.5px' }, r.label));
+      for (const [v, side] of [[r.lo, 'half'], [r.hi, 'one and a half times']]) {
+        if (Math.abs(v) < 1e-9) continue;
+        const x0 = Math.min(cx, sx(v)), w = Math.max(1, Math.abs(sx(v) - cx) - 1);
+        const left = v < 0;
+        const d = left ? roundedLeft(x0 + 1, y, w, barH, 4) : roundedRight(cx + 1, y, w, barH, 4);
+        g.append(sv('path', { d, fill: v < 0 ? 'var(--dec)' : 'var(--inc)', opacity: 0.85,
+          'data-tip': `<b>${esc(r.label)}</b> at ${side} its value<br>${v > 0 ? '+' : '−'}${hoursFmt(Math.abs(v))} H200-hours<br><span class="m">total ${hoursFmt(T.base + v)}</span>`, tabindex: 0 }));
+        const lab = (v > 0 ? '+' : '−') + compact(Math.abs(v));
+        g.append(sv('text', { x: left ? sx(v) - 5 : sx(v) + 5, y: y + barH / 2 + 4, 'text-anchor': left ? 'end' : 'start', class: 't-muted', style: 'font-size:11.5px;font-variant-numeric:tabular-nums' }, lab));
+      }
+    });
+    box.innerHTML = '';
+    if (!rows.length) { box.append(el('p', { class: 'note' }, 'Nothing to vary.')); return; }
+    box.append(g);
+    box.append(el('div', { class: 'legend', style: 'margin-top:8px' },
+      el('span', null, el('i', { style: 'background:var(--dec)' }), 'Fewer hours'), el('span', null, el('i', { style: 'background:var(--inc)' }), 'More hours')));
+  }
+  function roundedLeft(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    return `M${x + w},${y}h${-(w - r)}a${r},${r} 0 0 0 ${-r},${r}v${h - 2 * r}a${r},${r} 0 0 0 ${r},${r}h${w - r}z`;
+  }
+
+  function renderBreakdown(R) {
+    const t = el('table');
+    t.append(el('tr', null, el('th', null, 'Project'), el('th', null, 'Job'), el('th', null, 'Model'), el('th', { class: 'num' }, 'Tokens read'),
+      el('th', { class: 'num' }, 'Tokens trained'), el('th', { class: 'num' }, 'Memory'), el('th', { class: 'num' }, 'H200s per job'), el('th', { class: 'num' }, 'H200-hours')));
+    const stageColor = Object.fromEntries(CE.STAGES.map((s) => [s.key, s.color]));
+    for (const j of R.jobs) {
+      t.append(el('tr', null,
+        el('td', null, j.pname),
+        el('td', null, el('span', { class: 'fit' }, el('i', { style: 'display:inline-block;width:9px;height:9px;border-radius:3px;background:' + stageColor[j.stage] }), j.label)),
+        el('td', null, CE.MODELS[j.model].label.split(' (')[0] + ', ' + ({ bf16: 'bf16', fp8: '8-bit', int4: '4-bit', qlora: 'QLoRA', lora: 'LoRA', full: 'full' })[j.kind]),
+        el('td', { class: 'num' }, j.tokIn + j.tokOut > 0 ? compact(j.tokIn + j.tokOut) : '–'),
+        el('td', { class: 'num' }, j.tokTrain > 0 ? compact(j.tokTrain) : '–'),
+        el('td', { class: 'num' }, Math.round(j.mem) + ' GB'),
+        el('td', { class: 'num' }, String(j.kH200)),
+        el('td', { class: 'num' }, hoursFmt(j.h200))));
+    }
+    t.append(el('tr', null, el('td', { colspan: 7 }, 'Extra time, ' + Math.round(R.contingency * 100) + '%'), el('td', { class: 'num' }, hoursFmt(R.extraH200))));
+    t.append(el('tr', null, el('td', { colspan: 7, style: 'font-weight:650' }, 'Total'), el('td', { class: 'num', style: 'font-weight:650' }, hoursFmt(R.totalH200))));
+    const box = $('breakdown');
+    box.innerHTML = '';
+    box.append(t);
+  }
+
+  const ASSUME_ROWS = [
+    ['readRate', 'Reading speed, tokens per H200-hour (27B model)', 'compact', { pilot: ['derived', 'A completed note-reading run: about half a billion prompt tokens in 40 H200-hours with a 27B reader, assuming ~40 answer tokens a call. Characters were converted at 3 a token.'], planning: ['planning', 'Assumed in the budget report; not yet checked end to end.'] }],
+    ['outWeight', 'Cost of one answer token, in prompt tokens', 'num', { pilot: ['rule of thumb', 'Generation runs a token at a time, so each output token costs several input tokens of time.'], planning: ['planning', 'The budget counts prompt tokens only.'] }],
+    ['qloraRate', 'QLoRA training speed, tokens per H200-hour (27B)', 'compact', { pilot: ['derived', 'A 4B QLoRA smoke run trained at 17.9M tokens an hour on an H200; scaled to 27B. A 27B QLoRA run (about 12,000 résumés, 2 epochs, plus scoring) finished in under three hours, consistent with this.'], planning: ['planning', 'Budget assumption for our 27B models.'] }],
+    ['loraVsQlora', 'LoRA speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'LoRA skips the dequantization QLoRA does on every step.'], planning: ['planning', 'Treated as equal.'] }],
+    ['fullVsQlora', 'Full fine-tune speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'A full update costs about 6 operations per parameter per token against about 4 for LoRA.'], planning: ['planning', 'The budget assumes twice the training time; it is not a measured difference.'] }],
+    ['multiGpuEff', 'Efficiency when one job spans several GPUs', 'num', { pilot: ['rule of thumb', 'Communication between GPUs costs some speed.'], planning: ['planning', 'The budget\'s rates already count hours across all devices.'] }],
+    ['resumesPerHour', 'Résumés written per H200-hour (27B writer)', 'num', { pilot: ['derived', 'A 27B résumé run on one H200 with ~5,100-token inputs and ~250-token outputs.'], planning: ['planning', 'Budget assumption for up to 16,384 input tokens.'] }],
+    ['resumeRefIn', 'Source tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median input of the run above.'], planning: ['planning', 'The budget\'s input allowance.'] }],
+    ['resumeRefOut', 'Résumé tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median output of the run above.'], planning: ['planning', 'The budget\'s target résumé length.'] }],
+    ['a100Speed', 'A100 40 GB speed, in H200s', 'num', { all: ['derived', 'A pilot extraction put the H200 at 2.2–3.0 times an A100; a 12B reader on A100s and a 27B reader on H200s agree with one-third.'] }],
+    ['sparkSpeed', 'DGX Spark speed, in H200s', 'num', { all: ['published', 'About 100 TFLOPS of bf16 measured against the H200\'s 989, and 273 GB/s of memory bandwidth against 4,800. vLLM prefill on a 27B model runs near 1,900 tokens a second.'] }],
+    ['sparkLow', 'Spark speed, low end of the range', 'num', { all: ['published', 'Decode-heavy work, where bandwidth binds.'] }],
+    ['sparkHigh', 'Spark speed, high end of the range', 'num', { all: ['published', 'Prefill-heavy work with 4-bit or 8-bit weights.'] }],
+    ['sizeExp', 'How speed scales with model size (exponent)', 'num', { all: ['derived', 'Speed is taken to fall with size to this power. 0.85 fits our 12B reading run and 4B training run against the 27B references.'] }],
+    ['detailedMult', 'Detailed extraction, in simple readings', 'num', { all: ['planning', 'From the budget report.'] }],
+    ['h200Price', 'Cloud price, H200, $ per GPU-hour', 'num', { all: ['published', 'On-demand rates in October 2026 run about $4.40.'] }],
+    ['a100Price', 'Cloud price, A100 40 GB, $ per GPU-hour', 'num', { all: ['published', 'On-demand list prices run $1.40 to $2.80.'] }],
+    ['sparkPrice', 'DGX Spark price, $', 'num', { all: ['published', 'List price.'] }],
+    ['coresPerGpu', 'CPU cores reserved per GPU', 'num', { all: ['measured', 'What our GPU jobs request.'] }],
+  ];
+
+  function renderAssume() {
+    const t = el('table');
+    t.append(el('tr', null, el('th', null, 'Assumption'), el('th', { class: 'num' }, 'Value'), el('th', null, 'Source'), el('th', null, 'Note')));
+    for (const [key, label, kind, srcs] of ASSUME_ROWS) {
+      const [tag, note] = srcs.all || srcs[S.speeds];
+      const show = (v) => (kind === 'compact' ? compact(v) : trim(String(+v.toFixed(3))));
+      const inp = el('input', { class: 'assume-in', value: show(S.assume[key]), 'aria-label': label });
+      inp.addEventListener('change', () => {
+        const v = parseNum(inp.value);
+        if (isNaN(v) || v < 0) { inp.value = show(S.assume[key]); return; }
+        S.assume[key] = v;
+        inp.value = show(v);
+        changed();
+      });
+      t.append(el('tr', null, el('td', null, label), el('td', { class: 'num' }, inp),
+        el('td', null, el('span', { class: 'src' + (tag === 'measured' ? ' measured' : '') }, tag)), el('td', { class: 'note' }, note)));
+    }
+    const box = $('assumeTable');
+    box.innerHTML = '';
+    box.append(t);
+    box.append(el('p', { class: 'note' }, 'Memory per job: weights at 2 bytes a parameter in bf16, 1 at 8-bit, 0.55 at 4-bit, plus 30% for the cache and activations. QLoRA needs about 0.6 bytes a parameter, LoRA 2, and a full fine-tune 18 (weights, gradients and optimizer state).'));
+  }
+
+  function renderProjectTotals(R) {
+    for (const p of R.perProject) {
+      const n = document.querySelector(`[data-ptotal="${p.id}"]`);
+      if (n) n.textContent = hoursFmt(p.total) + ' H200-hours before extra time';
+    }
+    for (const p of S.projects) {
+      const card = document.querySelector(`[data-pid="${p.id}"]`);
+      if (!card) continue;
+      const pp = R.perProject.find((x) => x.id === p.id);
+      const set = (key, txt) => { const t = card.querySelector(`[data-tag="${key}"]`); if (t) t.textContent = txt; };
+      set('reading', p.reading.on ? compact(pp.byStage.reading) + ' h' : '');
+      set('resume', p.resume.mode === 'llm' ? compact(pp.byStage.resume + pp.byStage.writer) + ' h' : ({ none: 'none', template: 'template' })[p.resume.mode]);
+      set('predict', p.predict.on ? compact(pp.byStage.train + pp.byStage.score) + ' h' : '');
+      set('cpu', compact(p.cpuCoreHours) + ' core-h');
+    }
+  }
+
+  function renderResults() {
+    const R = CE.estimate(S);
+    renderKpis(R);
+    renderStack(R);
+    renderTime(R);
+    renderTokens(R);
+    renderFit();
+    renderTornado();
+    renderBreakdown(R);
+    renderProjectTotals(R);
+  }
+
+  // ---------- tooltip, toast, theme ----------
+  const tip = $('tip');
+  function showTip(target, x, y) {
+    tip.innerHTML = target.getAttribute('data-tip');
+    tip.style.opacity = 1;
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+    if (top + r.height > innerHeight - 8) top = y - r.height - 14;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+  document.addEventListener('pointermove', (e) => {
+    const t = e.target.closest && e.target.closest('[data-tip]');
+    if (t) showTip(t, e.clientX, e.clientY); else tip.style.opacity = 0;
+  });
+  document.addEventListener('focusin', (e) => {
+    const t = e.target.closest && e.target.closest('[data-tip]');
+    if (t) { const b = t.getBoundingClientRect(); showTip(t, b.right, b.top); } else tip.style.opacity = 0;
+  });
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.style.opacity = 1;
+    setTimeout(() => { t.style.opacity = 0; }, 1800);
+  }
+
+  function applyTheme(th) {
+    document.documentElement.dataset.theme = th;
+    $('themeBtn').textContent = th === 'dark' ? 'Light' : 'Dark';
+  }
+  const saved = (() => { try { return localStorage.getItem('ce-theme'); } catch (e) { return null; } })();
+  applyTheme(saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  if (/theme=dark/.test(location.search)) applyTheme('dark');
+  if (/theme=light/.test(location.search)) applyTheme('light');
+  $('themeBtn').addEventListener('click', () => {
+    const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(th);
+    try { localStorage.setItem('ce-theme', th); } catch (e) { /* private mode */ }
+    renderResults();
+  });
+
+  $('copyLink').addEventListener('click', async () => {
+    const enc = encodeState();
+    const url = location.href.split('#')[0] + '#s=' + enc;
+    try { await navigator.clipboard.writeText(url); toast('Link copied'); }
+    catch (e) { history.replaceState(null, '', '#s=' + enc); toast('Copy the address bar to share'); }
+  });
+
+  for (const b of document.querySelectorAll('[data-preset]')) {
+    b.addEventListener('click', () => {
+      S = CE.PRESETS[b.dataset.preset]();
+      $('fitModel').innerHTML = '';
+      renderControls(); renderAssume(); changed();
+    });
+  }
+  for (const b of document.querySelectorAll('#speedSeg button')) {
+    b.addEventListener('click', () => {
+      S.speeds = b.dataset.speeds;
+      Object.assign(S.assume, CE.SPEED_SETS[S.speeds]);
+      renderControls(); renderAssume(); changed();
+    });
+  }
+
+  let rz = null;
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderResults, 120); });
+
+  S = load();
+  renderControls();
+  renderAssume();
+  renderResults();
+})();
+</script>
+</body>
+</html>
