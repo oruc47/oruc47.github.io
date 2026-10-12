@@ -96,6 +96,16 @@ header.top p { margin: 0; color: var(--ink2); max-width: 760px; }
 .field .help { color: var(--muted); font-size: 12.5px; margin-top: 2px; line-height: 1.4; }
 .field select { width: 100%; margin-top: 4px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--raised); font-size: 13.5px; }
 input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--s1); height: 18px; }
+.field > .lead { display: block; font-size: 13.5px; font-weight: 600; margin-bottom: 6px; }
+.chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.chip { text-align: left; border: 1px solid var(--border); background: var(--raised); border-radius: 10px; padding: 7px 10px; cursor: pointer; min-width: 0; }
+.chip:hover { background: var(--s1-wash); }
+.chip b { display: block; font-size: 13.5px; font-weight: 600; }
+.chip small { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.chip[aria-pressed="true"] { border-color: var(--s1); background: var(--s1-wash); box-shadow: inset 0 0 0 1px var(--s1); }
+.chip[aria-pressed="true"] b { color: var(--s1); }
+.chip:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.calc { background: var(--s1-wash); color: var(--ink2); border-radius: 8px; padding: 6px 9px; font-size: 12.5px; line-height: 1.45; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 13.5px; margin: 8px 0; cursor: pointer; }
 .check input { accent-color: var(--s1); width: 16px; height: 16px; }
 
@@ -201,14 +211,9 @@ footer { margin-top: 26px; color: var(--muted); font-size: 12.5px; }
 
   <div class="presets">
     <span class="lab">Start from</span>
-    <button class="btn" data-preset="pilot">One project</button>
-    <button class="btn" data-preset="planning">Planning year, five projects</button>
-    <button class="btn" data-preset="lean">Lean pilot</button>
-    <span class="lab" style="margin-left:14px">Speeds from</span>
-    <span class="seg" id="speedSeg">
-      <button data-speeds="pilot">Pilot runs</button>
-      <button data-speeds="planning">Planning report</button>
-    </span>
+    <button class="btn" data-preset="pilot" title="One project: 400,000 notes read once by two 27B models, template résumés, and a 27B prediction model trained with QLoRA">One project</button>
+    <button class="btn" data-preset="planning" title="The case in our budget report: 30 million notes read ten times, and five projects with LLM-written résumés and 24 trained models each">Budget year, five projects</button>
+    <button class="btn" data-preset="lean" title="One project read once by a 12B model, with a 4B prediction model">Lean pilot</button>
   </div>
 
   <div class="layout">
@@ -262,7 +267,7 @@ footer { margin-top: 26px; color: var(--muted); font-size: 12.5px; }
 
       <section class="card">
         <h2>Assumptions and where they come from</h2>
-        <p class="sub">Every speed and price is editable. <span class="src measured">measured</span> values come from completed jobs; <span class="src">derived</span> ones are computed from measured jobs with a stated assumption; <span class="src">planning</span> values are the assumptions of our budget report; <span class="src">published</span> values come from vendor specifications or public benchmarks; a <span class="src">rule of thumb</span> is a judgement call.</p>
+        <p class="sub">Every speed and price is editable. <span class="src measured">measured</span> values come from completed jobs; <span class="src">derived</span> ones are computed from measured jobs with a stated assumption; <span class="src">budget</span> values are the assumptions of our budget report; <span class="src">published</span> values come from vendor specifications or public benchmarks; a <span class="src">rule of thumb</span> is a judgement call.</p>
         <div class="tablewrap" id="assumeTable"></div>
       </section>
     </main>
@@ -284,11 +289,10 @@ const CE = (function () {
   };
 
   const MODELS = {
-    m4:    { label: 'MedGemma 4B', total: 4, active: 4 },
-    g12:   { label: 'Gemma 12B', total: 12, active: 12 },
-    oss20: { label: 'gpt-oss 20B (mixture of experts)', total: 21, active: 3.6 },
-    m27:   { label: '27B (MedGemma 27B, Qwen 27B)', total: 27, active: 27 },
-    l70:   { label: 'Llama 70B', total: 70, active: 70 },
+    m4:    { label: 'MedGemma 4B', short: '4B', total: 4, active: 4 },
+    g12:   { label: 'Gemma 12B', short: '12B', total: 12, active: 12 },
+    oss20: { label: 'gpt-oss 20B (mixture of experts)', short: '20B', total: 21, active: 3.6 },
+    m27:   { label: '27B (MedGemma 27B, Qwen 27B)', short: '27B', total: 27, active: 27 },
   };
 
   const METHODS = {
@@ -696,6 +700,9 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
           CE.setNextId(1 + Math.max(0, ...st.projects.map((p) => p.id)));
           const fresh = CE.assumptionsFor(st.speeds || 'pilot');
           st.assume = Object.assign(fresh, st.assume || {});
+          // links made before a model was dropped from the list fall back to 27B
+          const known = (m) => (CE.MODELS[m] ? m : 'm27');
+          for (const p of st.projects) { p.reading.model = known(p.reading.model); p.resume.model = known(p.resume.model); p.predict.model = known(p.predict.model); }
           return st;
         }
       } catch (e) { /* fall back to the preset */ }
@@ -749,10 +756,13 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const range = el('input', { type: 'range', min: f.log ? 0 : f.min, max: f.log ? 1000 : f.max, step: f.log ? 1 : (f.step || 1),
       value: toT(v0), 'aria-label': f.label });
     const box = el('input', { class: 'val', value: show(v0), 'aria-label': f.label + ' value', inputmode: 'decimal' });
+    const help = f.help || f.helpFn ? el('div', { class: 'help' }, f.helpFn ? f.helpFn(v0) : f.help) : null;
+    const reHelp = () => { if (f.helpFn) help.textContent = f.helpFn(getPath(obj, f.path)); };
     range.addEventListener('input', () => {
       const v = fromT(+range.value);
       setPath(obj, f.path, f.toState ? f.toState(v) : v);
       box.value = show(v);
+      reHelp();
       changed();
     });
     box.addEventListener('change', () => {
@@ -764,12 +774,24 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
       setPath(obj, f.path, v);
       range.value = toT(v);
       box.value = show(v);
+      reHelp();
       changed();
     });
     return el('div', { class: 'field' },
       el('div', { class: 'row' }, el('label', null, f.label), box),
       range,
-      f.help ? el('div', { class: 'help' }, f.help) : null);
+      help);
+  }
+
+  // A row of buttons for one choice; the pressed one is the current value.
+  function chipField(label, options, current, onPick, help) {
+    const grid = el('div', { class: 'chips', role: 'group', 'aria-label': label });
+    for (const [k, name, sub] of options) {
+      const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': k === current ? 'true' : 'false' }, el('b', null, name), sub ? el('small', null, sub) : null);
+      b.addEventListener('click', () => onPick(k));
+      grid.append(b);
+    }
+    return el('div', { class: 'field' }, el('div', { class: 'lead' }, label), grid, help ? el('div', { class: 'help', html: help }) : null);
   }
 
   function selectField(obj, f, onChange) {
@@ -834,47 +856,64 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     card.append(stageBlock(p, 'reading', 'Note reading', st[0].color, 'reading.on', (b) => {
       if (!p.reading.on) { b.append(el('p', { class: 'off-note' }, 'Off. Switch on to have LLMs read this project\'s notes.')); return; }
       b.append(
-        el('p', { class: 'off-note' }, 'The fixed cost. Each reader model reads every note once per reading and answers questions about it.'),
-        sliderField(p, { path: 'reading.notes', label: 'Notes', min: 1000, max: 100e6, log: true }),
+        el('p', { class: 'off-note' }, 'The fixed cost. An LLM reads every note and answers questions about it, such as which symptoms are mentioned. The answers become features that every later model can reuse.'),
+        sliderField(p, { path: 'reading.notes', label: 'Notes', min: 1000, max: 100e6, log: true,
+          help: 'Clinical notes in the collection: admission notes, progress notes, discharge summaries.' }),
         sliderField(p, { path: 'reading.tokensPerNote', label: 'Tokens per note', min: 100, max: 5000, step: 10, fmt: intF,
-          help: 'A token is about three-quarters of a word. A short progress note runs a few hundred tokens.' }),
+          help: 'Average length of one note. A token is about three-quarters of a word; a short progress note runs a few hundred tokens.' }),
         sliderField(p, { path: 'reading.overhead', label: 'Instructions added', min: 0, max: 2, step: 0.05, fmt: pctFmt, pct: true,
-          help: 'Prompt text sent with each note, as a share of the note\'s length.' }),
-        sliderField(p, { path: 'reading.outPerNote', label: 'Answer tokens per note', min: 0, max: 2000, step: 10, fmt: intF }),
-        sliderField(p, { path: 'reading.simple', label: 'Simple readings', min: 0, max: 20, fmt: intF, int: true }),
+          help: 'The question sent along with each note, as a share of the note\'s length. At 30%, a 1,000-token note goes out as 1,300 tokens.' }),
+        sliderField(p, { path: 'reading.outPerNote', label: 'Answer tokens per note', min: 0, max: 2000, step: 10, fmt: intF,
+          help: 'Length of the model\'s reply to each note, for example a short list of the symptoms it found. Writing is slower than reading, so long answers cost more.' }),
+        sliderField(p, { path: 'reading.simple', label: 'Simple readings', min: 0, max: 20, fmt: intF, int: true,
+          help: 'Passes over the whole collection, each with one short question. A new question means a new reading.' }),
         sliderField(p, { path: 'reading.detailed', label: 'Detailed extractions', min: 0, max: 10, fmt: intF, int: true,
-          help: 'Each takes ' + S.assume.detailedMult + ' times as long as a simple reading.' }),
+          help: 'Passes that pull many fields out of each note at once. Each takes ' + S.assume.detailedMult + ' times as long as a simple reading.' }),
         sliderField(p, { path: 'reading.readers', label: 'Reader models', min: 1, max: 5, fmt: intF, int: true,
-          help: 'Several models reading the same notes and voting.' }),
-        selectField(p, { path: 'reading.model', label: 'Reader model', options: modelOpts() }),
+          help: 'Different LLMs that each read every note, so their answers can be checked against each other or combined by vote. Each is costed at the speed of the reader model below.' }),
+        selectField(p, { path: 'reading.model', label: 'Reader model', options: modelOpts(),
+          help: 'The LLM that reads the notes. Larger models are slower.' }, () => renderControls()),
         selectField(p, { path: 'reading.precision', label: 'Precision', options: Object.entries(CE.PRECISIONS),
-          help: 'Lower precision lets a large model fit on smaller GPUs; it does not change the speed in this estimate.' }),
+          help: 'How compactly the model\'s weights are stored. Lower precision lets a large model fit on smaller GPUs; it does not change the speed in this estimate.' }),
+        el('div', { class: 'field' }, el('div', { class: 'calc', 'data-calc': 'reading-' + p.id })),
       );
     }));
 
     // résumés
     card.append(stageBlock(p, 'resume', 'Patient résumés', st[1].color, null, (b) => {
       b.append(selectField(p, { path: 'resume.mode', label: 'How résumés are made', options: [
-        ['none', 'No résumés'], ['template', 'Fixed template, CPU only'], ['llm', 'Written by an LLM']] }, () => renderControls()));
+        ['none', 'No résumés'], ['template', 'Fixed template, CPU only'], ['llm', 'Written by an LLM']],
+        help: 'A résumé is a short text summary of one patient\'s record, which the prediction model reads. A fixed template fills in prepared variables and needs no GPU; an LLM writes a free-text summary.' }, () => renderControls()));
       if (p.resume.mode === 'none') return;
       b.append(
-        sliderField(p, { path: 'resume.records', label: 'Patient records', min: 1000, max: 1e6, log: true }),
-        sliderField(p, { path: 'resume.versions', label: 'Résumé versions', min: 1, max: 4, fmt: intF, int: true }),
+        sliderField(p, { path: 'resume.records', label: 'Patient records', min: 1000, max: 1e6, log: true,
+          help: 'Patients who get a résumé, counting training, validation and test patients together.' }),
+        sliderField(p, { path: 'resume.versions', label: 'Résumé versions', min: 1, max: 4, fmt: intF, int: true,
+          help: 'Different ways of writing the résumé, for example with and without the note findings. Every patient gets every version.' }),
       );
       if (p.resume.mode !== 'llm') return;
       b.append(
-        selectField(p, { path: 'resume.model', label: 'Writer model', options: modelOpts() }),
-        sliderField(p, { path: 'resume.inTokens', label: 'Source tokens per résumé', min: 500, max: 32768, step: 100, fmt: intF }),
-        sliderField(p, { path: 'resume.outTokens', label: 'Résumé length, tokens', min: 100, max: 4096, step: 50, fmt: intF }),
+        selectField(p, { path: 'resume.model', label: 'Writer model', options: modelOpts(),
+          help: 'The LLM that writes the résumés.' }, () => renderControls()),
+        sliderField(p, { path: 'resume.inTokens', label: 'Source tokens per résumé', min: 500, max: 32768, step: 100, fmt: intF,
+          help: 'How much of the patient\'s record the writer reads to produce one résumé.' }),
+        sliderField(p, { path: 'resume.outTokens', label: 'Résumé length, tokens', min: 100, max: 4096, step: 50, fmt: intF,
+          helpFn: (v) => 'Length of the finished résumé, about ' + Math.round(v * 0.75 / 10) * 10 + ' words.' }),
         checkField(p, 'resume.ft.on', 'Fine-tune the writer on example summaries', () => renderControls()),
+        el('div', { class: 'field', style: 'margin-top:-4px' }, el('div', { class: 'help' }, 'Train the writer on records paired with good summaries before it writes the rest.')),
       );
       if (!p.resume.ft.on) return;
       b.append(
-        selectField(p, { path: 'resume.ft.method', label: 'Writer training method', options: methodOpts(false) }),
-        sliderField(p, { path: 'resume.ft.pairs', label: 'Example pairs', min: 500, max: 100000, log: true }),
-        sliderField(p, { path: 'resume.ft.tokens', label: 'Tokens per pair', min: 1000, max: 32768, step: 256, fmt: intF }),
-        sliderField(p, { path: 'resume.ft.epochs', label: 'Epochs', min: 1, max: 6, fmt: intF, int: true }),
-        sliderField(p, { path: 'resume.ft.fits', label: 'Candidate writers trained', min: 1, max: 10, fmt: intF, int: true }),
+        selectField(p, { path: 'resume.ft.method', label: 'Writer training method', options: methodOpts(false),
+          help: 'QLoRA and LoRA train a small set of added weights; a full fine-tune updates every weight.' }, () => renderControls()),
+        sliderField(p, { path: 'resume.ft.pairs', label: 'Example pairs', min: 500, max: 100000, log: true,
+          help: 'Training examples for the writer, each a patient record paired with a summary written the way we want.' }),
+        sliderField(p, { path: 'resume.ft.tokens', label: 'Tokens per pair', min: 1000, max: 32768, step: 256, fmt: intF,
+          help: 'Length of one example: the record plus its summary.' }),
+        sliderField(p, { path: 'resume.ft.epochs', label: 'Epochs', min: 1, max: 6, fmt: intF, int: true,
+          help: 'How many times training reads the full set of example pairs.' }),
+        sliderField(p, { path: 'resume.ft.fits', label: 'Candidate writers trained', min: 1, max: 10, fmt: intF, int: true,
+          help: 'Separate training runs, for example with different settings, of which we keep the best.' }),
       );
     }, ({ none: 'none', template: 'template', llm: 'LLM' })[p.resume.mode]));
 
@@ -882,95 +921,174 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     card.append(stageBlock(p, 'predict', 'Prediction model', st[3].color, 'predict.on', (b) => {
       if (!p.predict.on) { b.append(el('p', { class: 'off-note' }, 'Off. Switch on to train and score LLM prediction models.')); return; }
       b.append(
-        el('p', { class: 'off-note' }, 'The variable cost. The base model reads each patient\'s résumé and predicts the outcome.'),
-        selectField(p, { path: 'predict.model', label: 'Base model', options: modelOpts() }),
+        el('p', { class: 'off-note' }, 'The variable cost. An LLM reads each patient\'s résumé and predicts the outcome. We train it on past patients, then score held-out patients to see how well it predicts.'),
+        selectField(p, { path: 'predict.model', label: 'Base model', options: modelOpts(),
+          help: 'The LLM we start from and train.' }, () => renderControls()),
         selectField(p, { path: 'predict.method', label: 'Training method', options: methodOpts(true),
-          help: 'QLoRA and LoRA train small added weights and leave the base model fixed. A full fine-tune updates every weight and needs about 18 bytes of GPU memory per parameter.' }, () => renderControls()),
+          help: 'Zero-shot uses the model as it is. QLoRA and LoRA train a small set of added weights and leave the model itself unchanged. A full fine-tune updates every weight.' }, () => renderControls()),
       );
       const trains = p.predict.method !== 'zeroshot';
+      const tokHelp = 'Length of one training example: the résumé plus the instructions and the answer.';
       if (trains) {
         b.append(
-          sliderField(p, { path: 'predict.examples', label: 'Training examples per fit', min: 1000, max: 1e6, log: true }),
-          sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF }),
-          selectField(p, { path: 'predict.schedule', label: 'Epochs', options: Object.entries(CE.SCHEDULES).map(([k, s]) => [k, s.label]) }),
+          sliderField(p, { path: 'predict.examples', label: 'Training examples per fit', min: 1000, max: 1e6, log: true,
+            help: 'Patients in the training set, one résumé each. A fit is one training run of one model on one training set.' }),
+          sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF, help: tokHelp }),
+          selectField(p, { path: 'predict.schedule', label: 'Epochs', options: Object.entries(CE.SCHEDULES).map(([k, s]) => [k, s.label]),
+            help: 'How many times training reads the full training set. Each epoch costs the same again. The last option trains every comparison twice, once for 3 epochs and once for 5.' }),
         );
       } else {
-        b.append(sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF }));
+        b.append(sliderField(p, { path: 'predict.tokensPerExample', label: 'Tokens per résumé', min: 256, max: 16384, step: 64, fmt: intF,
+          help: 'Length of what the model reads for one patient: the résumé plus the instructions.' }));
       }
       b.append(
-        sliderField(p, { path: 'predict.baseModels', label: 'Base models compared', min: 1, max: 5, fmt: intF, int: true }),
-        sliderField(p, { path: 'predict.versions', label: 'Résumé versions compared', min: 1, max: 4, fmt: intF, int: true }),
-        sliderField(p, { path: 'predict.splits', label: 'Splits or seeds', min: 1, max: 10, fmt: intF, int: true }),
-        sliderField(p, { path: 'predict.testRecords', label: 'Records scored per fit', min: 500, max: 200000, log: true }),
+        sliderField(p, { path: 'predict.baseModels', label: 'Base models compared', min: 1, max: 5, fmt: intF, int: true,
+          help: 'How many different LLMs we train on the same data to see which predicts best. Each is costed at the speed of the base model above.' }),
+        sliderField(p, { path: 'predict.versions', label: 'Résumé versions compared', min: 1, max: 4, fmt: intF, int: true,
+          help: 'How many résumé versions we train on separately, to see which way of writing the résumé predicts best.' }),
+        sliderField(p, { path: 'predict.splits', label: 'Splits or seeds', min: 1, max: 10, fmt: intF, int: true,
+          help: 'Repeats of each fit on a different division into training and validation patients, or a different random start, to check that the result is stable.' }),
+        el('div', { class: 'field' }, el('div', { class: 'calc', 'data-calc': 'fits-' + p.id })),
+        sliderField(p, { path: 'predict.testRecords', label: 'Records scored per fit', min: 500, max: 200000, log: true,
+          help: 'Held-out patients whose résumés each trained model reads and scores, to measure how well it predicts.' }),
       );
       if (trains) {
         b.append(sliderField(p, { path: 'predict.allowance', label: 'Evaluation allowance', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true,
-          help: 'Repeated scoring and comparisons, as a share of QLoRA training time. It does not change with the training method.' }));
+          help: 'GPU time for checking results beyond the scoring above: rescoring, calibration and side-by-side comparisons. It is set as a share of the QLoRA training time (the budget report uses 25%), so a full fine-tune does not raise it.' }));
       }
     }, ''));
 
     // cpu
     card.append(stageBlock(p, 'cpu', 'CPU-only work', 'var(--rest)', null, (b) => {
       b.append(sliderField(p, { path: 'cpuCoreHours', label: 'Core-hours', min: 100, max: 1e6, log: true, zero: true,
-        help: 'Data cleaning, joins, conventional models such as XGBoost, and checks.' }));
+        help: 'Work that needs no GPU: data cleaning and joins, conventional models such as XGBoost, and checks. One core for one hour is one core-hour.' }));
     }, ''));
     return card;
   }
 
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  const asFraction = (x) => '1/' + Math.round(1 / x);
+
   function hardwareCard() {
     const card = el('section', { class: 'card' });
     card.append(el('h3', null, 'Hardware'));
-    const seg = el('div', { class: 'seg', style: 'display:grid;grid-template-columns:1fr 1fr;border-radius:12px;width:100%' });
-    for (const [k, lab] of [['h200', 'Randi H200'], ['a100', 'Randi A100'], ['spark', 'DGX Spark'], ['combo', 'Spark + Randi']]) {
-      const b = el('button', { 'aria-pressed': S.hw.setup === k ? 'true' : 'false' }, lab);
-      b.addEventListener('click', () => { S.hw.setup = k; renderControls(); changed(); });
-      seg.append(b);
-    }
-    card.append(seg);
+    const A = S.assume;
+    const what = {
+      h200: 'Every job runs on Randi\'s H200s, up to the number we hold at once.',
+      a100: 'Every job runs on Randi\'s A100s. With 40 GB each, large models need several at once.',
+      spark: 'Every job runs on our own Spark. Nothing waits in a queue, but a Spark does about ' + asFraction(A.sparkSpeed) + ' of an H200\'s work in an hour.',
+      combo: 'Randi\'s H200s and the Spark split each job by speed; jobs too big for the Spark stay on Randi. <span data-live="combo"></span>',
+    }[S.hw.setup];
+    card.append(chipField('Where the jobs run', [
+      ['h200', 'Randi H200', '141 GB each, shared queue'],
+      ['a100', 'Randi A100', '40 GB each, ' + asFraction(A.a100Speed) + ' of an H200'],
+      ['spark', 'DGX Spark', '128 GB, ' + asFraction(A.sparkSpeed) + ' of an H200'],
+      ['combo', 'Spark + Randi', 'H200s and Spark share the work'],
+    ], S.hw.setup, (k) => { S.hw.setup = k; renderControls(); changed(); },
+    what + ' The work itself is the same on any hardware. The choice changes whose hours are used and how long the work takes on the calendar.'));
     const usesRandi = S.hw.setup !== 'spark';
     const usesSpark = S.hw.setup === 'spark' || S.hw.setup === 'combo';
     if (usesRandi) {
       card.append(
         sliderField(S, { path: 'hw.randiGpus', label: 'Randi GPUs we hold at once', min: 1, max: 16, fmt: intF, int: true,
-          help: 'The lab cap is 4. Randi has 8 H200s and 40 A100s in total.' }),
-        sliderField(S, { path: 'hw.duty', label: 'Share of time our jobs run', min: 0.1, max: 1, step: 0.05, fmt: pctFmt, pct: true,
-          help: 'The rest is spent waiting in the queue. At 60%, ten hours of GPU work take about 17 hours to come back.' }),
+          help: 'How many GPUs our jobs can use at the same time. The lab cap is 4; Randi has 8 H200s and 40 A100s in all.' }),
+        sliderField(S, { path: 'hw.duty', label: 'Share of the day our GPUs compute', min: 0.1, max: 1, step: 0.05, fmt: pctFmt, pct: true,
+          helpFn: (v) => 'Randi is shared, so our jobs wait in a queue. At ' + pctFmt(v) + ', our GPUs compute about ' + trim((24 * v).toFixed(1)) +
+            ' hours a day. Calendar time = GPU-hours ÷ GPUs held ÷ this share: 10 hours of work on one GPU take about ' + Math.round(10 / v) +
+            ' hours. The 60% default is a guess, not a measurement.' }),
       );
     }
     if (usesSpark) {
       card.append(
         sliderField(S, { path: 'hw.sparkUnits', label: 'DGX Sparks', min: 1, max: 4, fmt: intF, int: true,
-          help: 'A Spark is a desktop machine with 128 GB of memory shared by CPU and GPU. Two can be linked to hold larger models.' }),
-        sliderField(S, { path: 'hw.sparkUptime', label: 'Spark uptime', min: 0.5, max: 1, step: 0.05, fmt: pctFmt, pct: true }),
+          help: 'A Spark is a desktop machine with 128 GB of memory shared by its CPU and GPU. Two can be linked to hold larger models.' }),
+        sliderField(S, { path: 'hw.sparkUptime', label: 'Share of the day a Spark computes', min: 0.5, max: 1, step: 0.05, fmt: pctFmt, pct: true,
+          help: 'A Spark runs only our jobs, so nothing waits in a queue. The rest of the day is gaps between jobs and maintenance.' }),
       );
     }
     return card;
   }
 
-  function globalCard() {
+  // What every project uses now; a set with more than one entry means the projects differ.
+  function inUse() {
+    const models = new Set(), methods = new Set(), writerMethods = new Set();
+    for (const p of S.projects) {
+      if (p.reading.on) models.add(p.reading.model);
+      if (p.resume.mode === 'llm') { models.add(p.resume.model); if (p.resume.ft.on) writerMethods.add(p.resume.ft.method); }
+      if (p.predict.on) { models.add(p.predict.model); methods.add(p.predict.method); }
+    }
+    if (!models.size && S.projects[0]) models.add(S.projects[0].predict.model);
+    return { models, methods: methods.size ? methods : writerMethods };
+  }
+
+  function modelCard() {
     const card = el('section', { class: 'card' });
-    card.append(el('h3', null, 'For every project'));
-    card.append(sliderField(S, { path: 'contingency', label: 'Extra time for reruns and failures', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true }));
-    const ms = el('select', { 'aria-label': 'Base model for every project' });
-    ms.append(el('option', { value: '' }, 'Set the base model everywhere…'));
-    for (const [k, lab] of modelOpts()) ms.append(el('option', { value: k }, lab));
-    ms.addEventListener('change', () => {
-      if (!ms.value) return;
-      for (const p of S.projects) { p.predict.model = ms.value; p.resume.model = ms.value; }
+    card.append(el('h3', null, 'Model and training, every project'));
+    const A = S.assume;
+    const U = inUse();
+    const model = U.models.size === 1 ? [...U.models][0] : null;
+    const method = U.methods.size === 1 ? [...U.methods][0] : null;
+
+    const fast = (k) => trim(Math.pow(27 / CE.MODELS[k].active, A.sizeExp).toFixed(1)) + '× as fast as 27B';
+    let mHelp = 'Used for every LLM job in every project: reading notes, writing résumés and predicting. A single job can still be changed inside its project card.';
+    if (!model) mHelp = 'The projects now use different models, so none is highlighted. Pick one to use it everywhere.';
+    if (model === 'oss20') mHelp += ' gpt-oss 20B holds 21B parameters in memory but uses about 3.6B for each token, so it runs at the speed of a small model.';
+    card.append(chipField('LLM', [
+      ['m4', 'MedGemma 4B', fast('m4')],
+      ['g12', 'Gemma 12B', fast('g12')],
+      ['oss20', 'gpt-oss 20B', fast('oss20')],
+      ['m27', '27B', 'MedGemma or Qwen'],
+    ], model, (k) => {
+      for (const p of S.projects) { p.reading.model = k; p.resume.model = k; p.predict.model = k; }
+      $('fitModel').value = k;
       renderControls(); changed();
-    });
-    const ts = el('select', { 'aria-label': 'Training method for every project' });
-    ts.append(el('option', { value: '' }, 'Set the training method everywhere…'));
-    for (const [k, lab] of methodOpts(true)) ts.append(el('option', { value: k }, lab));
-    ts.addEventListener('change', () => {
-      if (!ts.value) return;
+    }, mHelp));
+
+    let tHelp;
+    if (!method) tHelp = 'The projects now use different methods, so none is highlighted. Pick one to use it everywhere.';
+    else {
+      tHelp = {
+        zeroshot: 'No training. The model reads each résumé and predicts as it is, so only scoring uses GPU time.',
+        qlora: 'Partial training. The model is stored compressed and left unchanged; training adjusts a small set of added weights. It needs the least memory.',
+        lora: 'Partial training, like QLoRA, but the model is kept at full precision. It needs more memory' +
+          (A.loraVsQlora > 1 ? ' and trains in about ' + Math.round(100 * (1 - 1 / A.loraVsQlora)) + '% less time.' : '; with these speeds it trains in the same time.'),
+        full: 'Every weight of the model is updated. It needs the most memory and trains in about ' + trim((1 / A.fullVsQlora).toFixed(1)) + ' times the QLoRA time.',
+      }[method];
+      const mk = model || S.projects[0].predict.model;
+      const mem = CE.memNeed(mk, method === 'zeroshot' ? 'bf16' : method, A);
+      const k = (g) => CE.placement(mem, g, S, A, A.sparkSpeed).k;
+      tHelp += ' With ' + (CE.MODELS[mk].short === '27B' ? 'a 27B model' : CE.MODELS[mk].label.split(' (')[0]) + ', one ' + (method === 'zeroshot' ? 'scoring' : 'training') +
+        ' job needs about ' + Math.round(mem) + ' GB: ' + plural(k('h200'), 'H200') + ', ' + plural(k('a100'), 'A100') + ' or ' + plural(k('spark'), 'Spark') + '.';
+      if (method !== 'zeroshot') tHelp += ' A fine-tuned résumé writer uses the same method.';
+    }
+    card.append(chipField('Training method', [
+      ['zeroshot', 'Zero-shot', 'no training'],
+      ['qlora', 'QLoRA', 'partial, compressed model'],
+      ['lora', 'LoRA', 'partial'],
+      ['full', 'Full fine-tune', 'every weight'],
+    ], method, (k) => {
       for (const p of S.projects) {
-        p.predict.method = ts.value;
-        if (ts.value !== 'zeroshot') p.resume.ft.method = ts.value;
+        p.predict.method = k;
+        if (k !== 'zeroshot') p.resume.ft.method = k;
       }
       renderControls(); changed();
-    });
-    card.append(el('div', { class: 'field' }, ms), el('div', { class: 'field' }, ts));
+    }, tHelp));
+
+    const P = CE.SPEED_SETS.pilot, B = CE.SPEED_SETS.planning;
+    const sHelp = S.speeds === 'pilot'
+      ? 'With a 27B model on one H200, reading runs at ' + compact(A.readRate) + ' tokens an hour and QLoRA training at ' + compact(A.qloraRate) + ', from our completed jobs. The budget report assumed ' + compact(B.readRate) + ' and ' + compact(B.qloraRate) + '.'
+      : 'With a 27B model on one H200, reading runs at ' + compact(A.readRate) + ' tokens an hour and QLoRA training at ' + compact(A.qloraRate) + ', as assumed in our budget report. Our completed jobs ran at about ' + compact(P.readRate) + ' and ' + compact(P.qloraRate) + '.';
+    card.append(chipField('Speeds', [
+      ['pilot', 'Our runs', 'measured'],
+      ['planning', 'Budget report', 'assumed, not checked'],
+    ], S.speeds, (k) => {
+      S.speeds = k;
+      Object.assign(S.assume, CE.SPEED_SETS[k]);
+      renderControls(); renderAssume(); changed();
+    }, sHelp + ' Every speed can be edited in the table at the bottom of the page.'));
+
+    card.append(sliderField(S, { path: 'contingency', label: 'Extra time for reruns and failures', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true,
+      help: 'Added once to every total for failed jobs, reruns and debugging. The budget report uses 30%.' }));
     return card;
   }
 
@@ -978,7 +1096,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const box = $('controls');
     const top = box.scrollTop;
     box.innerHTML = '';
-    box.append(hardwareCard(), globalCard());
+    box.append(modelCard(), hardwareCard());
     S.projects.forEach((p, i) => box.append(projectCard(p, i)));
     const add = el('button', { class: 'btn primary', style: 'width:100%;margin-bottom:14px' }, '+ Add a project');
     add.addEventListener('click', () => {
@@ -991,7 +1109,6 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     });
     box.append(add);
     box.scrollTop = top;
-    for (const b of document.querySelectorAll('#speedSeg button')) b.setAttribute('aria-pressed', b.dataset.speeds === S.speeds ? 'true' : 'false');
   }
 
   // ---------- results ----------
@@ -1020,23 +1137,29 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const L = SETUP_LABEL();
     const k = $('kpis');
     k.innerHTML = '';
-    const unitNow = { h200: 'H200-hours', a100: 'A100-hours', spark: 'Spark-hours', combo: 'H200-equivalent hours' }[S.hw.setup];
+    const unitNow = { h200: 'H200-hours', a100: 'A100-hours', spark: 'Spark-hours', combo: 'H200-hours on Randi' }[S.hw.setup];
     let mainHours, mainSub;
     if (S.hw.setup === 'combo') {
-      mainHours = sel.gpuH.h200 + sel.gpuH.spark * S.assume.sparkSpeed;
-      mainSub = 'On ' + L.combo + ': <b>' + hoursFmt(sel.gpuH.h200) + '</b> H200-hours on Randi and <b>' + hoursFmt(sel.gpuH.spark) + '</b> Spark-hours.';
+      const alone = R.setups.h200;
+      mainHours = sel.gpuH.h200;
+      mainSub = 'Plus <b>' + hoursFmt(sel.gpuH.spark) + '</b> Spark-hours on ' + plural(S.hw.sparkUnits, 'Spark') + '.';
+      if (alone.gpuH.h200 > 0) {
+        const share = 1 - sel.gpuH.h200 / alone.gpuH.h200;
+        mainSub += ' The Spark takes ' + (share < 0.01 ? 'under 1%' : 'about ' + Math.round(share * 100) + '%') + ' of the work, so Randi needs ' + hoursFmt(sel.gpuH.h200) + ' H200-hours instead of <b>' + hoursFmt(alone.gpuH.h200) + '</b>.';
+      }
     } else {
       mainHours = sel.gpuH[S.hw.setup];
       mainSub = 'On ' + L[S.hw.setup] + '.' + (S.hw.setup === 'h200' ? '' : ' Equal to <b>' + hoursFmt(R.totalH200) + '</b> H200-hours.');
     }
     if (!sel.ok) mainSub += ' Some jobs do not fit; they are left out.';
     const extra = Math.round(R.contingency * 100);
-    k.append(tile('hero', unitNow, hoursFmt(mainHours),
-      mainSub + ' Includes ' + extra + '% extra time. One A100-hour is about ' + trim((S.assume.a100Speed).toFixed(2)) + ' H200-hours; one Spark-hour about ' + trim(S.assume.sparkSpeed.toFixed(2)) + '.', sel));
+    const conv = S.hw.setup === 'combo' ? '' : ' One A100-hour is about ' + trim((S.assume.a100Speed).toFixed(2)) + ' H200-hours; one Spark-hour about ' + trim(S.assume.sparkSpeed.toFixed(2)) + '.';
+    k.append(tile('hero', unitNow, hoursFmt(mainHours), mainSub + ' Includes ' + extra + '% extra time.' + conv, sel));
 
     let wallSub = 'On ' + L[S.hw.setup] + '.';
-    if (S.hw.setup === 'spark' || S.hw.setup === 'combo') wallSub += ' Published Spark speeds give ' + duration(sel.wallFast) + ' to ' + duration(sel.wallSlow) + '.';
-    else wallSub += ' Our jobs run ' + Math.round(S.hw.duty * 100) + '% of the time.';
+    if (S.hw.setup === 'combo' && R.setups.h200.wall > 0) wallSub += ' Randi alone: <b>' + duration(R.setups.h200.wall) + '</b>.';
+    if ((S.hw.setup === 'spark' || S.hw.setup === 'combo') && duration(sel.wallFast) !== duration(sel.wallSlow)) wallSub += ' Published Spark speeds give ' + duration(sel.wallFast) + ' to ' + duration(sel.wallSlow) + '.';
+    else wallSub += ' Our GPUs compute ' + Math.round(S.hw.duty * 100) + '% of the day.';
     k.append(tile('', 'Calendar time', sel.ok || sel.wall > 0 ? duration(sel.wall) : 'n/a', wallSub));
 
     k.append(tile('', 'Tokens processed', compact(R.tokens.total), '<b>' + compact(R.tokens.read) + '</b> read or written by models, <b>' + compact(R.tokens.train) + '</b> passed through training.'));
@@ -1417,21 +1540,21 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
   }
 
   const ASSUME_ROWS = [
-    ['readRate', 'Reading speed, tokens per H200-hour (27B model)', 'compact', { pilot: ['derived', 'A completed note-reading run: about half a billion prompt tokens in 40 H200-hours with a 27B reader, assuming ~40 answer tokens a call. Characters were converted at 3 a token.'], planning: ['planning', 'Assumed in the budget report; not yet checked end to end.'] }],
-    ['outWeight', 'Cost of one answer token, in prompt tokens', 'num', { pilot: ['rule of thumb', 'Generation runs a token at a time, so each output token costs several input tokens of time.'], planning: ['planning', 'The budget counts prompt tokens only.'] }],
-    ['qloraRate', 'QLoRA training speed, tokens per H200-hour (27B)', 'compact', { pilot: ['derived', 'A 4B QLoRA smoke run trained at 17.9M tokens an hour on an H200; scaled to 27B. A 27B QLoRA run (about 12,000 résumés, 2 epochs, plus scoring) finished in under three hours, consistent with this.'], planning: ['planning', 'Budget assumption for our 27B models.'] }],
-    ['loraVsQlora', 'LoRA speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'LoRA skips the dequantization QLoRA does on every step.'], planning: ['planning', 'Treated as equal.'] }],
-    ['fullVsQlora', 'Full fine-tune speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'A full update costs about 6 operations per parameter per token against about 4 for LoRA.'], planning: ['planning', 'The budget assumes twice the training time; it is not a measured difference.'] }],
-    ['multiGpuEff', 'Efficiency when one job spans several GPUs', 'num', { pilot: ['rule of thumb', 'Communication between GPUs costs some speed.'], planning: ['planning', 'The budget\'s rates already count hours across all devices.'] }],
-    ['resumesPerHour', 'Résumés written per H200-hour (27B writer)', 'num', { pilot: ['derived', 'A 27B résumé run on one H200 with ~5,100-token inputs and ~250-token outputs.'], planning: ['planning', 'Budget assumption for up to 16,384 input tokens.'] }],
-    ['resumeRefIn', 'Source tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median input of the run above.'], planning: ['planning', 'The budget\'s input allowance.'] }],
-    ['resumeRefOut', 'Résumé tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median output of the run above.'], planning: ['planning', 'The budget\'s target résumé length.'] }],
+    ['readRate', 'Reading speed, tokens per H200-hour (27B model)', 'compact', { pilot: ['derived', 'A completed note-reading run: about half a billion prompt tokens in 40 H200-hours with a 27B reader, assuming ~40 answer tokens a call. Characters were converted at 3 a token.'], planning: ['budget', 'Assumed in the budget report; not yet checked end to end.'] }],
+    ['outWeight', 'Cost of one answer token, in prompt tokens', 'num', { pilot: ['rule of thumb', 'Generation runs a token at a time, so each output token costs several input tokens of time.'], planning: ['budget', 'The budget counts prompt tokens only.'] }],
+    ['qloraRate', 'QLoRA training speed, tokens per H200-hour (27B)', 'compact', { pilot: ['derived', 'A 4B QLoRA smoke run trained at 17.9M tokens an hour on an H200; scaled to 27B. A 27B QLoRA run (about 12,000 résumés, 2 epochs, plus scoring) finished in under three hours, consistent with this.'], planning: ['budget', 'Budget assumption for our 27B models.'] }],
+    ['loraVsQlora', 'LoRA speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'LoRA skips the dequantization QLoRA does on every step.'], planning: ['budget', 'Treated as equal.'] }],
+    ['fullVsQlora', 'Full fine-tune speed relative to QLoRA', 'num', { pilot: ['rule of thumb', 'A full update costs about 6 operations per parameter per token against about 4 for LoRA.'], planning: ['budget', 'The budget assumes twice the training time; it is not a measured difference.'] }],
+    ['multiGpuEff', 'Efficiency when one job spans several GPUs', 'num', { pilot: ['rule of thumb', 'Communication between GPUs costs some speed.'], planning: ['budget', 'The budget\'s rates already count hours across all devices.'] }],
+    ['resumesPerHour', 'Résumés written per H200-hour (27B writer)', 'num', { pilot: ['derived', 'A 27B résumé run on one H200 with ~5,100-token inputs and ~250-token outputs.'], planning: ['budget', 'Budget assumption for up to 16,384 input tokens.'] }],
+    ['resumeRefIn', 'Source tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median input of the run above.'], planning: ['budget', 'The budget\'s input allowance.'] }],
+    ['resumeRefOut', 'Résumé tokens behind that résumé speed', 'num', { pilot: ['measured', 'Median output of the run above.'], planning: ['budget', 'The budget\'s target résumé length.'] }],
     ['a100Speed', 'A100 40 GB speed, in H200s', 'num', { all: ['derived', 'A pilot extraction put the H200 at 2.2–3.0 times an A100; a 12B reader on A100s and a 27B reader on H200s agree with one-third.'] }],
     ['sparkSpeed', 'DGX Spark speed, in H200s', 'num', { all: ['published', 'About 100 TFLOPS of bf16 measured against the H200\'s 989, and 273 GB/s of memory bandwidth against 4,800. vLLM prefill on a 27B model runs near 1,900 tokens a second.'] }],
     ['sparkLow', 'Spark speed, low end of the range', 'num', { all: ['published', 'Decode-heavy work, where bandwidth binds.'] }],
     ['sparkHigh', 'Spark speed, high end of the range', 'num', { all: ['published', 'Prefill-heavy work with 4-bit or 8-bit weights.'] }],
     ['sizeExp', 'How speed scales with model size (exponent)', 'num', { all: ['derived', 'Speed is taken to fall with size to this power. 0.85 fits our 12B reading run and 4B training run against the 27B references.'] }],
-    ['detailedMult', 'Detailed extraction, in simple readings', 'num', { all: ['planning', 'From the budget report.'] }],
+    ['detailedMult', 'Detailed extraction, in simple readings', 'num', { all: ['budget', 'From the budget report.'] }],
     ['h200Price', 'Cloud price, H200, $ per GPU-hour', 'num', { all: ['published', 'On-demand rates in October 2026 run about $4.40.'] }],
     ['a100Price', 'Cloud price, A100 40 GB, $ per GPU-hour', 'num', { all: ['published', 'On-demand list prices run $1.40 to $2.80.'] }],
     ['sparkPrice', 'DGX Spark price, $', 'num', { all: ['published', 'List price.'] }],
@@ -1450,6 +1573,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
         if (isNaN(v) || v < 0) { inp.value = show(S.assume[key]); return; }
         S.assume[key] = v;
         inp.value = show(v);
+        renderControls();
         changed();
       });
       t.append(el('tr', null, el('td', null, label), el('td', { class: 'num' }, inp),
@@ -1471,10 +1595,36 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
       if (!card) continue;
       const pp = R.perProject.find((x) => x.id === p.id);
       const set = (key, txt) => { const t = card.querySelector(`[data-tag="${key}"]`); if (t) t.textContent = txt; };
-      set('reading', p.reading.on ? compact(pp.byStage.reading) + ' h' : '');
-      set('resume', p.resume.mode === 'llm' ? compact(pp.byStage.resume + pp.byStage.writer) + ' h' : ({ none: 'none', template: 'template' })[p.resume.mode]);
-      set('predict', p.predict.on ? compact(pp.byStage.train + pp.byStage.score) + ' h' : '');
+      const short = (m) => CE.MODELS[m].short;
+      const how = { zeroshot: 'zero-shot', qlora: 'QLoRA', lora: 'LoRA', full: 'full' };
+      set('reading', p.reading.on ? short(p.reading.model) + ' · ' + compact(pp.byStage.reading) + ' h' : '');
+      set('resume', p.resume.mode === 'llm' ? short(p.resume.model) + ' · ' + compact(pp.byStage.resume + pp.byStage.writer) + ' h' : ({ none: 'none', template: 'template' })[p.resume.mode]);
+      set('predict', p.predict.on ? short(p.predict.model) + ' ' + how[p.predict.method] + ' · ' + compact(pp.byStage.train + pp.byStage.score) + ' h' : '');
       set('cpu', compact(p.cpuCoreHours) + ' core-h');
+
+      const calc = (key, txt) => { const t = card.querySelector(`[data-calc="${key}-${p.id}"]`); if (t) t.textContent = txt; };
+      const r = p.reading;
+      if (r.on) {
+        const passes = r.simple + r.detailed * S.assume.detailedMult;
+        const tok = R.jobs.filter((j) => j.pid === p.id && j.stage === 'reading').reduce((a, j) => a + j.tokIn + j.tokOut, 0);
+        calc('reading', 'In all: ' + (r.detailed ? '(' + r.simple + ' + ' + r.detailed + ' × ' + S.assume.detailedMult + ') readings' : plural(r.simple, 'reading')) + ' × ' + plural(r.readers, 'model') +
+          ' = ' + trim((passes * r.readers).toFixed(1)) + ' passes over ' + compact(r.notes) + ' notes, about ' + compact(tok) + ' tokens.');
+      }
+      const q = p.predict;
+      if (q.on) {
+        const c = q.baseModels * q.versions * q.splits;
+        const sch = CE.SCHEDULES[q.schedule];
+        const head = q.baseModels + ' × ' + q.versions + ' × ' + q.splits + ' = ' + plural(c, 'comparison');
+        calc('fits', q.method === 'zeroshot' ? head + ', each scored without training.'
+          : head + (sch.fits > 1 ? ', each trained twice (3 and 5 epochs): ' : ': ') + plural(c * sch.fits, 'model') + ' trained, each followed by scoring.');
+      }
+    }
+    const live = document.querySelector('[data-live="combo"]');
+    if (live) {
+      const rh = Math.min(S.hw.randiGpus, CE.GPUS.h200.inventory) * S.hw.duty;
+      const rs = S.hw.sparkUnits * S.assume.sparkSpeed * S.hw.sparkUptime;
+      const pct = 100 * rs / (rh + rs);
+      live.textContent = 'Here ' + (S.hw.sparkUnits > 1 ? 'the Sparks take ' : 'the Spark takes ') + (pct < 1 ? 'under 1%' : 'about ' + Math.round(pct) + '%') + ' of the work, so everything finishes that much sooner.';
     }
   }
 
@@ -1546,14 +1696,6 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
       renderControls(); renderAssume(); changed();
     });
   }
-  for (const b of document.querySelectorAll('#speedSeg button')) {
-    b.addEventListener('click', () => {
-      S.speeds = b.dataset.speeds;
-      Object.assign(S.assume, CE.SPEED_SETS[S.speeds]);
-      renderControls(); renderAssume(); changed();
-    });
-  }
-
   let rz = null;
   addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderResults, 120); });
 
