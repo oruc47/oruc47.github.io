@@ -285,7 +285,7 @@ footer { margin-top: 26px; color: var(--muted); font-size: 12.5px; }
 
       <section class="card">
         <h2>Assumptions and where they come from</h2>
-        <p class="sub">Every speed and price is editable. <span class="src measured">measured</span> values come from completed jobs; <span class="src">derived</span> ones are computed from measured jobs with a stated assumption; <span class="src">budget</span> values are the assumptions of our budget report; <span class="src">published</span> values come from vendor specifications or public benchmarks; a <span class="src">rule of thumb</span> is a judgement call.</p>
+        <p class="sub">Every speed and price is editable. <span class="src measured">measured</span> values come from completed jobs; <span class="src">derived</span> ones are computed from measured jobs with a stated assumption; <span class="src">budget</span> values are the speeds in theory, assumed in our October budget before we had run anything; <span class="src">published</span> values come from vendor specifications or public benchmarks; a <span class="src">rule of thumb</span> is a judgement call.</p>
         <div class="tablewrap" id="assumeTable"></div>
       </section>
     </main>
@@ -1184,23 +1184,22 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
 
   function speedCard() {
     const card = el('section', { class: 'card' });
-    card.append(el('h3', null, 'Speeds and extra time'));
+    card.append(el('h3', null, 'GPU speed and extra time'));
     const spd = el('table', { class: 'spd' });
     const on = (set) => (S.speeds === set ? ' on' : '');
-    spd.append(el('tr', null, el('th', null, 'One H200, 27B model'), el('th', { class: 'num' + on('pilot') }, 'Test jobs'), el('th', { class: 'num' + on('planning') }, 'Budget')));
+    spd.append(el('tr', null, el('th', null, 'One H200, 27B model'), el('th', { class: 'num' + on('pilot') }, 'Our runs'), el('th', { class: 'num' + on('planning') }, 'In theory')));
     for (const [key, lab] of [['notes', 'Notes read an hour'], ['write', 'Résumés written an hour'], ['train', 'Résumés trained on an hour']]) {
       spd.append(el('tr', null, el('td', null, lab), ...['pilot', 'planning'].map((set) => el('td', { class: 'num' + on(set), 'data-live': 'spd-' + key + '-' + set }, ''))));
     }
-    const speedField = chipField('How fast the GPUs work', [
-      ['pilot', 'Our test jobs', 'speeds we measured on Randi'],
-      ['planning', 'Budget request', 'speeds assumed before any test'],
+    const speedField = chipField('GPU speed based on', [
+      ['pilot', 'Our previous runs', 'how fast our jobs actually ran'],
+      ['planning', 'In theory', 'what we assumed before running anything'],
     ], S.speeds, (k) => {
       S.speeds = k;
       Object.assign(S.assume, CE.SPEED_SETS[k]);
       renderControls(); renderAssume(); changed();
-    }, 'The October budget request set these speeds before we had run anything. Our test jobs since then read notes more slowly than assumed and trained faster. ' +
-      'The table compares them at the lengths set in the project cards; the highlighted column is in use. The budget-year preset uses the budget\'s speeds so that it reproduces the request.');
-    speedField.append(spd, el('div', { class: 'help' }, 'Every speed can also be edited in the table at the bottom of the page.'));
+    }, 'The October budget used the speeds in theory. Our runs since then read notes more slowly and trained faster.');
+    speedField.append(spd, el('div', { class: 'help' }, 'The budget-year preset uses the speeds in theory, so it matches the budget. Every speed can also be edited in the table at the bottom of the page.'));
     card.append(speedField);
 
     card.append(sliderField(S, { path: 'contingency', label: 'Extra time for reruns and failures', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true,
