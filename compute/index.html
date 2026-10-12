@@ -106,6 +106,12 @@ input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--s1); heigh
 .chip[aria-pressed="true"] b { color: var(--s1); }
 .chip:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
 .chip.wide { grid-column: 1 / -1; }
+.spd { font-size: 12.5px; margin: 8px 0 4px; }
+.spd th, .spd td { padding: 4px 6px; }
+.spd th { font-weight: 600; }
+.spd .on { background: var(--s1-wash); font-weight: 650; color: var(--ink); }
+.lead-row { display: flex; justify-content: space-between; gap: 10px; }
+.lead-t { color: var(--ink2); font-weight: 400; font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ticks { position: relative; height: 14px; margin: 1px 8px 0; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ticks span { position: absolute; transform: translateX(-50%); }
 .stage-hw { display: grid; grid-template-columns: minmax(0, 1fr) 124px 78px; gap: 6px 8px; align-items: center; font-size: 13.5px; margin: 10px 0 4px; }
@@ -242,7 +248,7 @@ footer { margin-top: 26px; color: var(--muted); font-size: 12.5px; }
 
       <section class="card chart">
         <h2>How long it would take</h2>
-        <p class="sub">Calendar time to finish everything, by hardware. Randi jobs wait in a shared queue; a Spark runs only our jobs. The last row uses the machine picked for each stage under Hardware, By stage. Whiskers show the range of published Spark speeds.</p>
+        <p class="sub">Calendar time to finish everything, by hardware. Randi jobs wait in a shared queue; a Spark runs only our jobs. Rows that start with "Notes" split the work as chosen under Hardware, and the same split the other way round. Whiskers show the range of published Spark speeds.</p>
         <div id="timeChart"></div>
         <div id="timeNotes"></div>
       </section>
@@ -301,9 +307,9 @@ const CE = (function () {
   };
 
   const MODELS = {
-    m4:    { label: 'MedGemma 4B', short: '4B', total: 4, active: 4 },
-    g12:   { label: 'Gemma 12B', short: '12B', total: 12, active: 12 },
-    oss20: { label: 'gpt-oss 20B (mixture of experts)', short: '20B', total: 21, active: 3.6 },
+    m4:    { label: 'MedGemma 4B', short: 'MedGemma 4B', total: 4, active: 4 },
+    q4:    { label: 'Qwen 4B', short: 'Qwen 4B', total: 4, active: 4 },
+    g12:   { label: 'Gemma 12B', short: 'Gemma 12B', total: 12, active: 12 },
     m27:   { label: '27B (MedGemma 27B, Qwen 27B)', short: '27B', total: 27, active: 27 },
   };
 
@@ -519,6 +525,18 @@ const CE = (function () {
       setups[s].wallFast = evalSetup(jobs, s, S, A, A.sparkHigh).wall;
       setups[s].wallSlow = evalSetup(jobs, s, S, A, A.sparkLow).wall;
     }
+    // the same split the other way round: notes where the estimation runs, and vice versa
+    const hw = S.hw.stageHw || DEFAULT_STAGE_HW;
+    const est = EST_STAGES.map((k) => hw[k]);
+    if (est.every((t) => t === est[0]) && hw.reading !== est[0]) {
+      const sw = { reading: est[0] };
+      for (const k of EST_STAGES) sw[k] = hw.reading;
+      const S2 = Object.assign({}, S, { hw: Object.assign({}, S.hw, { stageHw: sw }) });
+      setups.swap = evalSetup(jobs, 'stage', S2, A, A.sparkSpeed);
+      setups.swap.stageHw = sw;
+      setups.swap.wallFast = evalSetup(jobs, 'stage', S2, A, A.sparkHigh).wall;
+      setups.swap.wallSlow = evalSetup(jobs, 'stage', S2, A, A.sparkLow).wall;
+    }
 
     const tokens = { in: 0, out: 0, train: 0 };
     for (const j of jobs) { tokens.in += j.tokIn; tokens.out += j.tokOut; tokens.train += j.tokTrain; }
@@ -593,13 +611,15 @@ const CE = (function () {
     return a;
   }
 
-  // the "By stage" default: notes read on the Spark, the estimation on Randi's H200s
-  const DEFAULT_STAGE_HW = { reading: 'spark', resume: 'h200', writer: 'h200', train: 'h200', score: 'h200' };
+  // Where each stage runs. The page always describes hardware this way; one machine for
+  // everything is the case where all five entries agree.
+  const DEFAULT_STAGE_HW = { reading: 'h200', resume: 'h200', writer: 'h200', train: 'h200', score: 'h200' };
+  const EST_STAGES = ['resume', 'writer', 'train', 'score'];
 
   function baseState(speeds) {
     return {
       v: 1, speeds, assume: assumptionsFor(speeds), contingency: 0.3,
-      hw: { setup: 'h200', randiGpus: 4, duty: 0.6, sparkUnits: 1, sparkUptime: 0.9,
+      hw: { setup: 'stage', randiGpus: 4, duty: 0.6, sparkUnits: 1, sparkUptime: 0.9,
         stageHw: Object.assign({}, DEFAULT_STAGE_HW), stagesWait: true },
       projects: [],
     };
@@ -646,7 +666,7 @@ const CE = (function () {
   function newProject(name) { return project(name); }
   function setNextId(n) { nextId = Math.max(nextId, n); }
 
-  return { GPUS, MODELS, METHODS, PRECISIONS, SCHEDULES, STAGES, SPEED_SETS, BASE_ASSUME, DEFAULT_STAGE_HW,
+  return { GPUS, MODELS, METHODS, PRECISIONS, SCHEDULES, STAGES, SPEED_SETS, BASE_ASSUME, DEFAULT_STAGE_HW, EST_STAGES,
     assumptionsFor, memNeed, placement, estimate, tornado, PRESETS, newProject, setNextId };
 })();
 if (typeof globalThis !== 'undefined') globalThis.CE = CE;
@@ -732,10 +752,12 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
           const fresh = CE.assumptionsFor(st.speeds || 'pilot');
           st.assume = Object.assign(fresh, st.assume || {});
           // links made before a model was dropped from the list fall back to 27B
-          const known = (m) => (CE.MODELS[m] ? m : 'm27');
+          const known = (m) => (CE.MODELS[m] ? m : m === 'oss20' ? 'q4' : 'm27');
           for (const p of st.projects) { p.reading.model = known(p.reading.model); p.resume.model = known(p.resume.model); p.predict.model = known(p.predict.model); }
           st.hw = Object.assign({ stagesWait: true }, st.hw);
           st.hw.stageHw = Object.assign({}, CE.DEFAULT_STAGE_HW, st.hw.stageHw || {});
+          // older links name one machine for everything
+          if (st.hw.setup !== 'stage') { for (const k in st.hw.stageHw) st.hw.stageHw[k] = st.hw.setup || 'h200'; st.hw.setup = 'stage'; }
           return st;
         }
       } catch (e) { /* fall back to the preset */ }
@@ -746,7 +768,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const def = CE.assumptionsFor(S.speeds);
     const diff = {};
     for (const k in S.assume) if (JSON.stringify(S.assume[k]) !== JSON.stringify(def[k])) diff[k] = S.assume[k];
-    const slim = Object.assign({}, S, { assume: diff, projects: S.projects.map((p) => Object.assign({}, p, { _open: undefined })) });
+    const slim = Object.assign({}, S, { assume: diff, hw: Object.assign({}, S.hw, { _stagesOpen: undefined }), projects: S.projects.map((p) => Object.assign({}, p, { _open: undefined })) });
     return btoa(unescape(encodeURIComponent(JSON.stringify(slim)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
   let saveTimer = null;
@@ -830,7 +852,8 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
 
   // A row of buttons for one choice; the pressed one is the current value.
   function chipField(label, options, current, onPick, help) {
-    const grid = el('div', { class: 'chips', role: 'group', 'aria-label': label });
+    const name = typeof label === 'string' ? label : label.firstChild.textContent;
+    const grid = el('div', { class: 'chips', role: 'group', 'aria-label': name });
     for (const [k, name, sub, wide] of options) {
       const b = el('button', { class: 'chip' + (wide ? ' wide' : ''), type: 'button', 'aria-pressed': k === current ? 'true' : 'false' }, el('b', null, name), sub ? el('small', null, sub) : null);
       b.addEventListener('click', () => onPick(k));
@@ -1016,49 +1039,58 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
 
   const HW_NAMES = { h200: 'Randi H200', a100: 'Randi A100', spark: 'Spark', combo: 'Spark + H200' };
   const stageTargets = () => CE.STAGES.map((st) => S.hw.stageHw[st.key] || 'h200');
+  // the machine every stage uses, or null when stages differ
+  const uniformTarget = () => { const T = stageTargets(); return T.every((t) => t === T[0]) ? T[0] : null; };
+  const estTarget = () => { const E = CE.EST_STAGES.map((k) => S.hw.stageHw[k]); return E.every((t) => t === E[0]) ? E[0] : null; };
+  const effectiveSetup = () => uniformTarget() || 'stage';
 
   function hardwareCard() {
     const card = el('section', { class: 'card' });
     card.append(el('h3', null, 'Hardware'));
     const A = S.assume;
-    const what = {
-      h200: 'Every job runs on Randi\'s H200s, up to the number we hold at once.',
-      a100: 'Every job runs on Randi\'s A100s. With 40 GB each, large models need several at once.',
-      spark: 'Every job runs on our own Sparks. Nothing waits in a queue, but a Spark does about ' + asFraction(A.sparkSpeed) + ' of an H200\'s work in an hour.',
-      combo: 'Randi\'s H200s and the Sparks split each job by speed; jobs too big for a Spark stay on Randi. <span data-live="combo"></span>',
-      stage: 'Pick a machine for each stage below, for example the notes read on a Spark while Randi does the estimation.',
-    }[S.hw.setup];
-    card.append(chipField('Where the jobs run', [
-      ['h200', 'Randi H200', '141 GB each, shared queue'],
-      ['a100', 'Randi A100', '40 GB each, ' + asFraction(A.a100Speed) + ' of an H200'],
+    const hwOptions = [
+      ['h200', 'Randi H200', '141 GB, shared queue'],
+      ['a100', 'Randi A100', '40 GB, ' + asFraction(A.a100Speed) + ' of an H200'],
       ['spark', 'DGX Spark', '128 GB, ' + asFraction(A.sparkSpeed) + ' of an H200'],
-      ['combo', 'Spark + Randi', 'H200s and Spark share every job'],
-      ['stage', 'By stage', 'pick a machine for each stage', true],
-    ], S.hw.setup, (k) => { S.hw.setup = k; renderControls(); changed(); },
-    what + ' The work itself is the same on any hardware. The choice changes whose hours are used and how long the work takes on the calendar.'));
+      ['combo', 'Spark + H200', 'both share the work'],
+    ];
+    card.append(el('p', { class: 'off-note', style: 'margin:0 0 4px' },
+      'Choose where the notes are read and where the estimation runs. Pick the same machine twice to run everything there. The work is the same on any hardware; the choice changes whose hours are used and how long it takes on the calendar.'));
+    const lead = (text, key) => el('span', { class: 'lead-row' }, el('span', null, text), el('span', { class: 'lead-t', 'data-live': key }, ''));
 
-    let usesRandi = S.hw.setup !== 'spark';
-    let usesSpark = S.hw.setup === 'spark' || S.hw.setup === 'combo';
-    if (S.hw.setup === 'stage') {
-      const T = stageTargets();
-      usesRandi = T.some((t) => t !== 'spark');
-      usesSpark = T.some((t) => t === 'spark' || t === 'combo');
-      const grid = el('div', { class: 'stage-hw' }, el('div', { class: 'th' }, 'Stage'), el('div', { class: 'th' }, 'Runs on'), el('div', { class: 'th', style: 'text-align:right' }, 'Takes'));
-      for (const st of CE.STAGES) {
-        const sel = el('select', { 'aria-label': st.label + ' runs on' });
-        for (const k of ['h200', 'a100', 'spark', 'combo']) sel.append(el('option', { value: k, selected: S.hw.stageHw[st.key] === k ? 'selected' : false }, HW_NAMES[k]));
-        sel.addEventListener('change', () => { S.hw.stageHw[st.key] = sel.value; renderControls(); changed(); });
-        grid.append(el('div', { class: 'nm' }, el('i', { style: 'background:' + st.color }), st.label), sel, el('div', { class: 't', 'data-live': 'stage-' + st.key }, ''));
-      }
-      card.append(grid);
-      card.append(el('div', { class: 'field', style: 'margin-top:4px' }, el('div', { class: 'help' },
-        'Times are calendar time on the chosen machine, with the extra-time allowance. "Spark + H200" splits that stage between both.')));
-      if (T.includes('spark') && T.some((t) => t === 'h200' || t === 'a100')) {
-        card.append(
-          checkField(S, 'hw.stagesWait', 'Later stages wait for the notes', () => renderControls()),
-          el('div', { class: 'field', style: 'margin-top:-4px' }, el('div', { class: 'help', 'data-live': 'stagewait' }, '')),
-        );
-      }
+    card.append(chipField(lead('Note reading runs on', 'grp-reading'), hwOptions, S.hw.stageHw.reading,
+      (k) => { S.hw.stageHw.reading = k; renderControls(); changed(); }));
+    const est = estTarget();
+    card.append(chipField(lead('Estimation runs on', 'grp-est'), hwOptions, est,
+      (k) => { for (const x of CE.EST_STAGES) S.hw.stageHw[x] = k; renderControls(); changed(); },
+      'Estimation is everything after the notes: writing résumés, fine-tuning the writer, training the prediction models and scoring them.' +
+      (est ? '' : ' Its stages now run on different machines, so none is highlighted.')));
+
+    // per-stage choice for the estimation, folded away unless it is in use
+    const det = el('details', { class: 'stage', style: 'margin-top:2px' });
+    if (!est || S.hw._stagesOpen) det.open = true;
+    det.addEventListener('toggle', () => { S.hw._stagesOpen = det.open; });
+    det.append(el('summary', null, el('span', { class: 'chev' }, '▶'), 'Set each estimation stage separately'));
+    const grid = el('div', { class: 'stage-hw' }, el('div', { class: 'th' }, 'Stage'), el('div', { class: 'th' }, 'Runs on'), el('div', { class: 'th', style: 'text-align:right' }, 'Takes'));
+    for (const st of CE.STAGES.filter((x) => x.key !== 'reading')) {
+      const sel = el('select', { 'aria-label': st.label + ' runs on' });
+      for (const k of ['h200', 'a100', 'spark', 'combo']) sel.append(el('option', { value: k, selected: S.hw.stageHw[st.key] === k ? 'selected' : false }, HW_NAMES[k]));
+      sel.addEventListener('change', () => { S.hw.stageHw[st.key] = sel.value; renderControls(); changed(); });
+      grid.append(el('div', { class: 'nm' }, el('i', { style: 'background:' + st.color }), st.label), sel, el('div', { class: 't', 'data-live': 'stage-' + st.key }, ''));
+    }
+    det.append(el('div', { class: 'body', style: 'padding-left:0' }, grid));
+    card.append(det);
+
+    const T = stageTargets();
+    const usesRandi = T.some((t) => t !== 'spark');
+    const usesSpark = T.some((t) => t === 'spark' || t === 'combo');
+    if (T.includes('combo')) card.append(el('div', { class: 'field' }, el('div', { class: 'help' },
+      'With Spark + H200, Randi\'s H200s and the Sparks split a stage by speed; jobs too big for a Spark stay on Randi. ', el('span', { 'data-live': 'combo' }))));
+    if (T.includes('spark') && T.some((t) => t === 'h200' || t === 'a100')) {
+      card.append(
+        checkField(S, 'hw.stagesWait', 'Estimation waits for the notes', () => renderControls()),
+        el('div', { class: 'field', style: 'margin-top:-4px' }, el('div', { class: 'help', 'data-live': 'stagewait' }, '')),
+      );
     }
     if (usesRandi) {
       card.append(
@@ -1106,11 +1138,10 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const fast = (k) => trim(Math.pow(27 / CE.MODELS[k].active, A.sizeExp).toFixed(1)) + '× as fast as 27B';
     let mHelp = 'Used for every LLM job in every project: reading notes, writing résumés and predicting. A single job can still be changed inside its project card.';
     if (!model) mHelp = 'The projects now use different models, so none is highlighted. Pick one to use it everywhere.';
-    if (model === 'oss20') mHelp += ' gpt-oss 20B holds 21B parameters in memory but uses about 3.6B for each token, so it runs at the speed of a small model.';
     card.append(chipField('LLM', [
       ['m4', 'MedGemma 4B', fast('m4')],
+      ['q4', 'Qwen 4B', fast('q4')],
       ['g12', 'Gemma 12B', fast('g12')],
-      ['oss20', 'gpt-oss 20B', fast('oss20')],
       ['m27', '27B', 'MedGemma or Qwen'],
     ], model, (k) => {
       for (const p of S.projects) { p.reading.model = k; p.resume.model = k; p.predict.model = k; }
@@ -1148,18 +1179,29 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
       renderControls(); changed();
     }, tHelp));
 
-    const P = CE.SPEED_SETS.pilot, B = CE.SPEED_SETS.planning;
-    const sHelp = S.speeds === 'pilot'
-      ? 'With a 27B model on one H200, reading runs at ' + compact(A.readRate) + ' tokens an hour and QLoRA training at ' + compact(A.qloraRate) + ', from our completed jobs. The budget report assumed ' + compact(B.readRate) + ' and ' + compact(B.qloraRate) + '.'
-      : 'With a 27B model on one H200, reading runs at ' + compact(A.readRate) + ' tokens an hour and QLoRA training at ' + compact(A.qloraRate) + ', as assumed in our budget report. Our completed jobs ran at about ' + compact(P.readRate) + ' and ' + compact(P.qloraRate) + '.';
-    card.append(chipField('Speeds', [
-      ['pilot', 'Our runs', 'measured'],
-      ['planning', 'Budget report', 'assumed, not checked'],
+    return card;
+  }
+
+  function speedCard() {
+    const card = el('section', { class: 'card' });
+    card.append(el('h3', null, 'Speeds and extra time'));
+    const spd = el('table', { class: 'spd' });
+    const on = (set) => (S.speeds === set ? ' on' : '');
+    spd.append(el('tr', null, el('th', null, 'One H200, 27B model'), el('th', { class: 'num' + on('pilot') }, 'Test jobs'), el('th', { class: 'num' + on('planning') }, 'Budget')));
+    for (const [key, lab] of [['notes', 'Notes read an hour'], ['write', 'Résumés written an hour'], ['train', 'Résumés trained on an hour']]) {
+      spd.append(el('tr', null, el('td', null, lab), ...['pilot', 'planning'].map((set) => el('td', { class: 'num' + on(set), 'data-live': 'spd-' + key + '-' + set }, ''))));
+    }
+    const speedField = chipField('How fast the GPUs work', [
+      ['pilot', 'Our test jobs', 'speeds we measured on Randi'],
+      ['planning', 'Budget request', 'speeds assumed before any test'],
     ], S.speeds, (k) => {
       S.speeds = k;
       Object.assign(S.assume, CE.SPEED_SETS[k]);
       renderControls(); renderAssume(); changed();
-    }, sHelp + ' Every speed can be edited in the table at the bottom of the page.'));
+    }, 'The October budget request set these speeds before we had run anything. Our test jobs since then read notes more slowly than assumed and trained faster. ' +
+      'The table compares them at the lengths set in the project cards; the highlighted column is in use. The budget-year preset uses the budget\'s speeds so that it reproduces the request.');
+    speedField.append(spd, el('div', { class: 'help' }, 'Every speed can also be edited in the table at the bottom of the page.'));
+    card.append(speedField);
 
     card.append(sliderField(S, { path: 'contingency', label: 'Extra time for reruns and failures', min: 0, max: 1, step: 0.05, fmt: pctFmt, pct: true,
       help: 'Added once to every total for failed jobs, reruns and debugging. The budget report uses 30%.' }));
@@ -1170,7 +1212,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     const box = $('controls');
     const top = box.scrollTop;
     box.innerHTML = '';
-    box.append(modelCard(), hardwareCard());
+    box.append(modelCard(), hardwareCard(), speedCard());
     S.projects.forEach((p, i) => box.append(projectCard(p, i)));
     const add = el('button', { class: 'btn primary', style: 'width:100%;margin-bottom:14px' }, '+ Add a project');
     add.addEventListener('click', () => {
@@ -1194,12 +1236,11 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     setTimeout(() => { pending = false; renderResults(); save(); }, 16);
   }
 
-  function stageLabel() {
-    const short = { h200: 'H200', a100: 'A100', spark: 'Spark', combo: 'Spark + H200' };
-    const hw = S.hw.stageHw;
-    const rest = CE.STAGES.slice(1).map((st) => hw[st.key]);
-    if (!rest.every((t) => t === rest[0])) return 'By stage, mixed';
-    return rest[0] === hw.reading ? 'By stage, all ' + short[rest[0]] : 'Notes ' + short[hw.reading] + ', rest ' + short[rest[0]];
+  function stageLabel(hw) {
+    hw = hw || S.hw.stageHw;
+    const short = { h200: 'H200', a100: 'A100', spark: 'Spark', combo: 'Spark+H200' };
+    const rest = CE.EST_STAGES.map((k) => hw[k]);
+    return 'Notes ' + short[hw.reading] + ', estimation ' + (rest.every((t) => t === rest[0]) ? short[rest[0]] : 'mixed');
   }
   const SETUP_LABEL = () => ({
     h200: 'Randi H200 × ' + Math.min(S.hw.randiGpus, 8),
@@ -1222,7 +1263,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
   }
 
   function renderKpis(R) {
-    const setup = S.hw.setup;
+    const setup = effectiveSetup();
     const sel = R.setups[setup];
     const L = SETUP_LABEL();
     const g = sel.gpuH;
@@ -1263,10 +1304,10 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     if (setup === 'stage') {
       const b = sel.busy;
       const parts = [];
-      if (b.spark > 0) parts.push((S.hw.sparkUnits > 1 ? sparks : 'Spark') + ': ' + duration(b.spark));
-      if (b.randi > 0) parts.push('Randi: ' + duration(b.randi));
-      if (b.both > 0) parts.push('both together: ' + duration(b.both));
-      wallSub = 'Busy time: ' + (parts.join(', ') || 'none') + '.';
+      if (b.spark > 0) parts.push((S.hw.sparkUnits > 1 ? sparks : 'Spark') + ' ' + duration(b.spark));
+      if (b.randi > 0) parts.push('Randi ' + duration(b.randi));
+      if (b.both > 0) parts.push('both together ' + duration(b.both));
+      wallSub = 'Busy: ' + (parts.join(', ') || 'none') + '.';
       if (b.spark > 0 && b.randi > 0) wallSub += sel.overlap ? ' They work at the same time, so the busier one sets the time.' : ' The stages run one after another, so the times add.';
     } else {
       wallSub = 'On ' + L[setup] + '.';
@@ -1392,10 +1433,13 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
   function renderTime(R) {
     const box = $('timeChart');
     const W = Math.max(260, box.clientWidth || 700);
-    const L = SETUP_LABEL();
-    const order = ['h200', 'a100', 'spark', 'combo', 'stage'];
+    const eff = effectiveSetup();
+    const L0 = SETUP_LABEL();
+    const L = { h200: 'All on ' + L0.h200, a100: 'All on ' + L0.a100, spark: 'All on ' + L0.spark, combo: 'All on ' + L0.combo, stage: L0.stage,
+      swap: R.setups.swap ? stageLabel(R.setups.swap.stageHw) : '' };
+    const order = ['h200', 'a100', 'spark', 'combo'].concat(eff === 'stage' ? ['stage'] : [], R.setups.swap ? ['swap'] : []);
     const narrow = W < 560;
-    const labelW = narrow ? 0 : Math.min(200, Math.max(...order.map((k) => textWidth(L[k], 12.5) + 14)));
+    const labelW = narrow ? 0 : Math.min(240, Math.max(...order.map((k) => textWidth(L[k], 12.5) + 14)));
     const right = narrow ? 8 : 16, top = 30, rowH = narrow ? 58 : 44;
     const plotW = W - labelW - right;
     const marks = [[24, '1 day'], [24 * 7, '1 week'], [24 * 30.44, '1 month'], [24 * 365.25, '1 year'], [24 * 365.25 * 5, '5 years']];
@@ -1413,7 +1457,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
     order.forEach((k, i) => {
       const s = R.setups[k];
       const y = top + i * rowH + rowH / 2 + (narrow ? 8 : 0);
-      const selected = k === S.hw.setup;
+      const selected = k === eff;
       const rowText = narrow ? L[k] + ': ' + (s.ok || s.wall > 0 ? duration(s.wall) + (s.ok ? '' : ' (partial)') : 'nothing fits') : L[k];
       g.append(sv('text', { x: 0, y: narrow ? y - 14 : y + 4, class: selected ? 't-strong' : 't-ink', style: 'font-size:12.5px' }, rowText));
       g.append(sv('line', { x1: labelW, x2: labelW + plotW, y1: y, y2: y, stroke: 'var(--track)', 'stroke-width': 6, 'stroke-linecap': 'round' }));
@@ -1427,7 +1471,7 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
         g.append(sv('line', { x1: x(s.wallFast), x2: x(s.wallSlow), y1: y, y2: y, stroke: color, 'stroke-width': 2 }));
         for (const v of [s.wallFast, s.wallSlow]) g.append(sv('line', { x1: x(v), x2: x(v), y1: y - 6, y2: y + 6, stroke: color, 'stroke-width': 2 }));
       }
-      const hrs = hoursParts(s.gpuH) + (k === 'stage' && s.overlap ? '<br><span class="m">Randi and the Sparks work at the same time</span>' : '');
+      const hrs = hoursParts(s.gpuH) + ((k === 'stage' || k === 'swap') && s.overlap ? '<br><span class="m">Randi and the Sparks work at the same time</span>' : '');
       const range = ranged ? `<br><span class="m">Published Spark speeds: ${duration(s.wallFast)} to ${duration(s.wallSlow)}</span>` : '';
       const miss = s.ok ? '' : `<br><span class="m">Leaves out ${s.blockers.length} job${s.blockers.length > 1 ? 's' : ''} that do not fit</span>`;
       g.append(sv('circle', { cx: x(s.wall), cy: y, r: selected ? 7 : 6, fill: color, stroke: 'var(--surface)', 'stroke-width': 2,
@@ -1744,12 +1788,32 @@ if (typeof globalThis !== 'undefined') globalThis.CE = CE;
       const blocked = st.blockers.some((b) => b.job.stage === x.key);
       n.textContent = blocked ? 'does not fit' : st.stageWall[x.key] > 0 ? duration(st.stageWall[x.key]) : '–';
     }
+    const pick = (f) => S.projects.find(f) || S.projects[0];
+    const pr = pick((p) => p.reading.on).reading, pw = pick((p) => p.resume.mode === 'llm').resume, pq = pick((p) => p.predict.on).predict;
+    const sig2 = (x) => { if (!(x > 0)) return '–'; const m = Math.pow(10, Math.floor(Math.log10(x)) - 1); return (Math.round(x / m) * m).toLocaleString('en-US', { maximumFractionDigits: 1 }); };
+    for (const set of ['pilot', 'planning']) {
+      const V = CE.SPEED_SETS[set];
+      const vals = {
+        notes: V.readRate / (pr.tokensPerNote * (1 + pr.overhead) + V.outWeight * pr.outPerNote),
+        write: V.resumesPerHour * (V.resumeRefIn + V.outWeight * V.resumeRefOut) / (pw.inTokens + V.outWeight * pw.outTokens),
+        train: V.qloraRate / pq.tokensPerExample,
+      };
+      for (const k in vals) { const n = document.querySelector(`[data-live="spd-${k}-${set}"]`); if (n) n.textContent = sig2(vals[k]); }
+    }
+    const grp = (key, stages) => {
+      const n = document.querySelector(`[data-live="${key}"]`);
+      if (!n) return;
+      const t = stages.reduce((a, k) => a + (st.stageWall[k] || 0), 0);
+      n.textContent = st.blockers.some((b) => stages.includes(b.job.stage)) ? 'some jobs do not fit' : t > 0 ? 'takes ' + duration(t) : 'no work';
+    };
+    grp('grp-reading', ['reading']);
+    grp('grp-est', CE.EST_STAGES);
     const sw = document.querySelector('[data-live="stagewait"]');
     if (sw) {
       const b = st.busy;
       const sparkName = S.hw.sparkUnits > 1 ? plural(S.hw.sparkUnits, 'Spark') : 'Spark';
       const both = b.both > 0 ? ' + both ' + duration(b.both) : '';
-      sw.textContent = 'On: each stage starts when the one before it ends, so the times add: ' + sparkName + ' ' + duration(b.spark) + ' + Randi ' + duration(b.randi) + both +
+      sw.textContent = 'On: the estimation starts once the notes are read, so the times add: ' + sparkName + ' ' + duration(b.spark) + ' + Randi ' + duration(b.randi) + both +
         ' = ' + duration(b.spark + b.randi + b.both) + '. Off: both machines work at the same time, for example Randi trains on projects whose notes are already read, and the busier one sets the time: ' +
         duration(Math.max(b.spark, b.randi) + b.both) + '.';
     }
